@@ -1,0 +1,11 @@
+# Cloudflare Workers Secrets & Environment Variables (.dev.vars)
+# Copy this file to .dev.vars for local wrangler dev execution.
+# NEVER commit .dev.vars containing real production keys!
+
+ENVIRONMENT=development
+JWT_SECRET=carajas_jwt_super_secret_key_change_in_production_2026
+BOOTSTRAP_ADMIN_TOKEN=carajas_admin_bootstrap_secret_token
+PIX_KEY=financeiro@shopcarajas.com.br
+PIX_KEY_TYPE=email
+PIX_BENEFICIARY_NAME=SHOP CARAJAS LTDA
+PIX_CITY=CANAA DOS CARAJAS

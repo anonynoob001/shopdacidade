@@ -1,0 +1,7 @@
+{
+  "name": "Shop Carajás - Marketplace Regional",
+  "description": "Plataforma completa de comércio, catálogo de produtos, contratação de serviços profissionais e entregas para Canaã dos Carajás - PA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

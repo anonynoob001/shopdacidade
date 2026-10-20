@@ -1,0 +1,26 @@
+{
+  "id": "/",
+  "name": "Shop da Cidade - Marketplace Regional",
+  "short_name": "Shop da Cidade",
+  "description": "Compre em lojas locais e contrate serviços em Canaã dos Carajás - PA.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/shop-da-cidade-logo-transparente.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/shop-da-cidade-logo-transparente.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

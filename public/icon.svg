@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="50%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <linearGradient id="peakGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.8" />
+    </linearGradient>
+  </defs>
+  <!-- Background with safe zone -->
+  <rect width="512" height="512" rx="100" fill="url(#bg)" />
+  
+  <!-- Subtle circular accent -->
+  <circle cx="256" cy="256" r="190" fill="none" stroke="url(#brandGrad)" stroke-width="4" stroke-opacity="0.3" stroke-dasharray="8 6" />
+
+  <!-- Mountain Silhouette (Serra dos Carajás inspiration) -->
+  <path d="M 110 340 L 200 240 L 256 290 L 330 210 L 402 340 Z" fill="url(#peakGrad)" />
+
+  <!-- Shopping Bag / Marketplace Gateway Outline -->
+  <rect x="166" y="220" width="180" height="150" rx="24" fill="#0f172a" stroke="url(#brandGrad)" stroke-width="12" />
+  
+  <!-- Shopping Bag Handle -->
+  <path d="M 216 220 V 175 C 216 150 296 150 296 175 V 220" fill="none" stroke="url(#brandGrad)" stroke-width="12" stroke-linecap="round" />
+  
+  <!-- Modern 'C' and Spark symbol in center -->
+  <circle cx="256" cy="295" r="32" fill="#10b981" />
+  <path d="M 270 280 L 245 295 L 270 310" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Small gold star/location spark representing Canaã -->
+  <polygon points="340,165 345,178 358,180 348,190 351,203 340,196 329,203 332,190 322,180 335,178" fill="#f59e0b" />
+</svg>

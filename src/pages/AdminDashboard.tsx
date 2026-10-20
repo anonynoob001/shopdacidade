@@ -1,0 +1,1424 @@
+// Shop da Cidade - Central Admin Dashboard (Superadmin & Admin) with Live Theme Customizer & Supabase Integration
+import {
+  AlertCircle,
+  ArrowLeft,
+  Check,
+  CheckCircle,
+  CheckCircle2,
+  Copy,
+  Database,
+  DollarSign,
+  Download,
+  Edit2,
+  ExternalLink,
+  Eye,
+  FileCode,
+  FileSpreadsheet,
+  Globe,
+  Layers,
+  Package,
+  Palette,
+  Plus,
+  RefreshCw,
+  Save,
+  Search,
+  Server,
+  Shield,
+  ShoppingBag,
+  Sliders,
+  Sparkles,
+  Store,
+  Terminal,
+  Trash2,
+  TrendingUp,
+  Truck,
+  Users,
+  Wrench,
+  X
+} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useSiteTheme } from '../context/ThemeContext';
+import { apiRequest, formatBRL, formatDateBR } from '../services/api';
+import {
+  CloudflareConfig,
+  DatabaseStatsResponse,
+  executeD1Query,
+  fetchDatabaseStats,
+  getCloudflareD1SchemaSQL,
+  getCloudflareWranglerCommands,
+  getSavedCloudflareConfig,
+  saveCloudflareConfig
+} from '../services/cloudflare';
+import { AuditLog, PromotionalBanner, ServiceProvider, Store as StoreType, User } from '../worker/types';
+
+interface AdminDashboardProps {
+  onNavigate: (view: string, param?: string) => void;
+}
+
+const THEME_PRESETS = [
+  {
+    name: 'Shop da Cidade Oficial (Ouro & Grafite)',
+    primary: '#fdca04',
+    secondary: '#0f172a',
+    accent: '#f59e0b'
+  },
+  {
+    name: 'Verde Esmeralda Carajás',
+    primary: '#059669',
+    secondary: '#064e3b',
+    accent: '#10b981'
+  },
+  {
+    name: 'Azul Real Tecnológico',
+    primary: '#2563eb',
+    secondary: '#1e1b4b',
+    accent: '#3b82f6'
+  },
+  {
+    name: 'Laranja Solar Vibrante',
+    primary: '#ea580c',
+    secondary: '#431407',
+    accent: '#f97316'
+  },
+  {
+    name: 'Rubi Luxo',
+    primary: '#e11d48',
+    secondary: '#4c0519',
+    accent: '#fb7185'
+  }
+];
+
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
+  const { user } = useAuth();
+  const { updateSettingsState, refreshSettings: refreshGlobalTheme } = useSiteTheme();
+
+  const [metrics, setMetrics] = useState<any>(null);
+  const [usersList, setUsersList] = useState<User[]>([]);
+  const [storesList, setStoresList] = useState<StoreType[]>([]);
+  const [providersList, setProvidersList] = useState<ServiceProvider[]>([]);
+  const [bannersList, setBannersList] = useState<PromotionalBanner[]>([]);
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [activeTab, setActiveTab] = useState<'kpis' | 'users' | 'stores' | 'providers' | 'settings' | 'cloudflare' | 'banners' | 'logs'>('kpis');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsSaveSuccess, setSettingsSaveSuccess] = useState(false);
+
+  // Cloudflare D1 Integration state
+  const savedCf = getSavedCloudflareConfig();
+  const [cfDatabaseId, setCfDatabaseId] = useState(savedCf.databaseId);
+  const [cfDatabaseName, setCfDatabaseName] = useState(savedCf.databaseName);
+  const [cfAccountId, setCfAccountId] = useState(savedCf.accountId);
+  const [cfR2Bucket, setCfR2Bucket] = useState(savedCf.r2Bucket);
+  const [cfStats, setCfStats] = useState<DatabaseStatsResponse | null>(null);
+  const [isLoadingCfStats, setIsLoadingCfStats] = useState(false);
+  const [cfQuery, setCfQuery] = useState('SELECT id, name, slug, status, theme_color_primary, is_open FROM stores LIMIT 5;');
+  const [isExecutingQuery, setIsExecutingQuery] = useState(false);
+  const [queryResult, setQueryResult] = useState<{ columns: string[]; rows: any[]; rowCount: number; latencyMs: number; error?: string } | null>(null);
+  const [copiedSql, setCopiedSql] = useState(false);
+  const [copiedCommands, setCopiedCommands] = useState(false);
+
+  // Banner modal
+  const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
+  const [bannerTitle, setBannerTitle] = useState('');
+  const [bannerSubtitle, setBannerSubtitle] = useState('');
+  const [bannerImage, setBannerImage] = useState('');
+  const [bannerLink, setBannerLink] = useState('/lojas');
+
+  const loadAdminData = async () => {
+    setIsLoading(true);
+    try {
+      const [metRes, usersRes, storesRes, provRes, bannersRes, setRes, logsRes] = await Promise.all([
+        apiRequest<{ metrics: any }>('/api/admin/metrics'),
+        apiRequest<{ users: User[] }>('/api/admin/users'),
+        apiRequest<{ stores: StoreType[] }>('/api/admin/stores'),
+        apiRequest<{ providers: ServiceProvider[] }>('/api/admin/providers'),
+        apiRequest<{ banners: PromotionalBanner[] }>('/api/admin/banners'),
+        apiRequest<{ settings: Record<string, string> }>('/api/admin/settings'),
+        apiRequest<{ logs: AuditLog[] }>('/api/admin/audit-logs')
+      ]);
+
+      setMetrics(metRes.metrics);
+      setUsersList(usersRes.users || []);
+      setStoresList(storesRes.stores || []);
+      setProvidersList(provRes.providers || []);
+      setBannersList(bannersRes.banners || []);
+      setSettings(setRes.settings || {});
+      setAuditLogs(logsRes.logs || []);
+
+      if (setRes.settings?.cloudflare_database_id && !cfDatabaseId) {
+        setCfDatabaseId(setRes.settings.cloudflare_database_id);
+      }
+      if (setRes.settings?.cloudflare_database_name && !cfDatabaseName) {
+        setCfDatabaseName(setRes.settings.cloudflare_database_name);
+      }
+      if (setRes.settings?.cloudflare_account_id && !cfAccountId) {
+        setCfAccountId(setRes.settings.cloudflare_account_id);
+      }
+      if (setRes.settings?.cloudflare_r2_bucket && !cfR2Bucket) {
+        setCfR2Bucket(setRes.settings.cloudflare_r2_bucket);
+      }
+    } catch (err: any) {
+      console.error('Failed to load admin data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAdminData();
+  }, []);
+
+  const handleUpdateUser = async (userId: string, role: string, is_active: number) => {
+    try {
+      await apiRequest(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role, is_active })
+      });
+      await loadAdminData();
+    } catch (err: any) {
+      alert(err?.message || 'Falha ao atualizar usuário.');
+    }
+  };
+
+  const handleUpdateStore = async (storeId: string, status: string, is_featured: number) => {
+    try {
+      await apiRequest(`/api/admin/stores/${storeId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status, is_featured })
+      });
+      await loadAdminData();
+    } catch (err: any) {
+      alert(err?.message || 'Falha ao atualizar loja.');
+    }
+  };
+
+  const handleUpdateProvider = async (providerId: string, is_approved: number, is_featured: number) => {
+    try {
+      await apiRequest(`/api/admin/providers/${providerId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_approved, is_featured })
+      });
+      await loadAdminData();
+    } catch (err: any) {
+      alert(err?.message || 'Falha ao atualizar prestador.');
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    setSettingsSaveSuccess(false);
+    try {
+      await apiRequest('/api/admin/settings', {
+        method: 'POST',
+        body: JSON.stringify(settings)
+      });
+      updateSettingsState(settings as any);
+      await refreshGlobalTheme();
+      setSettingsSaveSuccess(true);
+      setTimeout(() => setSettingsSaveSuccess(false), 3000);
+      await loadAdminData();
+    } catch (err: any) {
+      alert(err?.message || 'Falha ao salvar configurações.');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const loadCloudflareStats = async () => {
+    setIsLoadingCfStats(true);
+    try {
+      const stats = await fetchDatabaseStats();
+      setCfStats(stats);
+    } catch (err: any) {
+      console.error('Failed to fetch D1 stats:', err);
+    } finally {
+      setIsLoadingCfStats(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'cloudflare') {
+      loadCloudflareStats();
+    }
+  }, [activeTab]);
+
+  const handleSaveCloudflareConfig = async () => {
+    saveCloudflareConfig({
+      databaseId: cfDatabaseId.trim(),
+      databaseName: cfDatabaseName.trim(),
+      accountId: cfAccountId.trim(),
+      r2Bucket: cfR2Bucket.trim()
+    });
+
+    try {
+      await apiRequest('/api/admin/settings', {
+        method: 'POST',
+        body: JSON.stringify({
+          cloudflare_database_id: cfDatabaseId.trim(),
+          cloudflare_database_name: cfDatabaseName.trim(),
+          cloudflare_account_id: cfAccountId.trim(),
+          cloudflare_r2_bucket: cfR2Bucket.trim()
+        })
+      });
+      alert('Configurações do Cloudflare D1 e R2 salvas com sucesso!');
+      await loadCloudflareStats();
+    } catch {
+      alert('Configurações salvas localmente no navegador!');
+    }
+  };
+
+  const handleExecuteQuery = async () => {
+    if (!cfQuery.trim()) return;
+    setIsExecutingQuery(true);
+    try {
+      const res = await executeD1Query(cfQuery.trim());
+      setQueryResult(res);
+      if (res.success) {
+        // Refresh stats if non-select mutation occurred
+        if (!/^SELECT\b/i.test(cfQuery.trim())) {
+          await loadCloudflareStats();
+        }
+      }
+    } catch (err: any) {
+      setQueryResult({
+        columns: ['error'],
+        rows: [],
+        rowCount: 0,
+        latencyMs: 0,
+        error: err?.message || 'Falha ao executar query'
+      });
+    } finally {
+      setIsExecutingQuery(false);
+    }
+  };
+
+  const handleCopyCommands = () => {
+    const cmds = getCloudflareWranglerCommands({
+      databaseId: cfDatabaseId,
+      databaseName: cfDatabaseName,
+      accountId: cfAccountId,
+      r2Bucket: cfR2Bucket,
+      apiToken: '',
+      environment: 'production'
+    });
+
+    const fullText = `# Comandos Cloudflare Wrangler - Shop da Cidade\n# 1. Criar banco D1 no Cloudflare\n${cmds.createDb}\n\n# 2. Criar bucket R2 para fotos e mídias\n${cmds.r2Create}\n\n# 3. Aplicar migrações D1 remotas\n${cmds.applyMigrations}\n\n# 4. Testar query remota no D1\n${cmds.testQuery}\n\n# 5. Build e Deploy na Cloudflare Edge\n${cmds.deploy}`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(fullText);
+      setCopiedCommands(true);
+      setTimeout(() => setCopiedCommands(false), 2500);
+    }
+  };
+
+  const handleCopyD1SQL = () => {
+    const ddl = getCloudflareD1SchemaSQL();
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(ddl);
+      setCopiedSql(true);
+      setTimeout(() => setCopiedSql(false), 2500);
+    }
+  };
+
+  const handleCreateBanner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await apiRequest('/api/admin/banners', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: bannerTitle,
+          subtitle: bannerSubtitle,
+          image_url: bannerImage,
+          link_url: bannerLink
+        })
+      });
+      setIsBannerModalOpen(false);
+      setBannerTitle('');
+      setBannerSubtitle('');
+      setBannerImage('');
+      await loadAdminData();
+    } catch (err: any) {
+      alert(err?.message || 'Falha ao criar banner.');
+    }
+  };
+
+  const handleDeleteBanner = async (bannerId: string) => {
+    if (!confirm('Deseja excluir este banner promocional?')) return;
+    try {
+      await apiRequest(`/api/admin/banners/${bannerId}`, { method: 'DELETE' });
+      await loadAdminData();
+    } catch (err: any) {
+      alert(err?.message || 'Falha ao excluir banner.');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
+        <div className="w-10 h-10 border-3 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-semibold text-slate-500">Carregando Painel Central de Controle...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+          <button
+            onClick={() => onNavigate('home')}
+            className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 mb-2 cursor-pointer transition"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Voltar ao Início
+          </button>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <Shield className="w-6 h-6 text-amber-500" />
+              Painel do Super Administrador
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black uppercase tracking-wider">
+              Shop da Cidade
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">Gestão de Lojas, Usuários, Cores do Site e Banco de Dados Cloudflare D1</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <a
+            href="/api/admin/export-csv"
+            download
+            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <span>Exportar CSV</span>
+          </a>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-slate-200 gap-2 sm:gap-4 text-xs font-bold text-slate-600 overflow-x-auto no-scrollbar">
+        <button
+          onClick={() => setActiveTab('kpis')}
+          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'kpis' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4 text-amber-500" />
+          Indicadores
+        </button>
+
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'settings' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
+          }`}
+        >
+          <Palette className="w-4 h-4 text-amber-500" />
+          Personalização & Cores do Site
+        </button>
+
+        <button
+          onClick={() => setActiveTab('cloudflare')}
+          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'cloudflare' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
+          }`}
+        >
+          <Database className="w-4 h-4 text-amber-500" />
+          Banco Cloudflare (D1 & R2)
+        </button>
+
+        <button
+          onClick={() => setActiveTab('stores')}
+          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'stores' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
+          }`}
+        >
+          <Store className="w-4 h-4 text-amber-500" />
+          Lojas ({storesList.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'users' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
+          }`}
+        >
+          <Users className="w-4 h-4 text-amber-500" />
+          Usuários ({usersList.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab('providers')}
+          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'providers' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
+          }`}
+        >
+          <Wrench className="w-4 h-4 text-amber-500" />
+          Prestadores ({providersList.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab('banners')}
+          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'banners' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
+          }`}
+        >
+          <Layers className="w-4 h-4 text-amber-500" />
+          Banners da Home
+        </button>
+
+        <button
+          onClick={() => setActiveTab('logs')}
+          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'logs' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
+          }`}
+        >
+          <FileCode className="w-4 h-4 text-amber-500" />
+          Auditoria
+        </button>
+      </div>
+
+      {/* TAB: KPIS */}
+      {activeTab === 'kpis' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Faturamento Total</span>
+              <span className="text-2xl font-black text-slate-900 mt-1 block">{formatBRL(metrics?.gmv || 0)}</span>
+            </div>
+            <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Comissão da Plataforma</span>
+              <span className="text-2xl font-black text-amber-600 mt-1 block">{formatBRL(metrics?.totalCommissionEarned || 0)}</span>
+            </div>
+            <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Lojas Ativas</span>
+              <span className="text-2xl font-black text-slate-900 mt-1 block">{metrics?.activeStores || 0}</span>
+            </div>
+            <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Usuários Cadastrados</span>
+              <span className="text-2xl font-black text-slate-900 mt-1 block">{metrics?.totalUsers || 0}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: SETTINGS & VISUAL IDENTITY (Super Admin Main Site Customizer) */}
+      {activeTab === 'settings' && (
+        <form onSubmit={handleSaveSettings} className="space-y-6 max-w-3xl text-xs animate-in fade-in duration-200">
+          {settingsSaveSuccess && (
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
+              <span>Cores e configurações do site principal salvas com sucesso! O visual foi atualizado.</span>
+            </div>
+          )}
+
+          {/* Site Colors & Palette Panel */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5">
+            <div className="flex items-center gap-2">
+              <Palette className="w-5 h-5 text-amber-500" />
+              <div>
+                <h3 className="text-base font-black text-slate-900 tracking-tight">Identidade Visual & Cores do Site Principal</h3>
+                <p className="text-xs text-slate-500">
+                  Aqui o Super Admin define as cores e textos oficiais aplicados em todo o marketplace (cabeçalho, rodapé, botões principais e destaques).
+                </p>
+              </div>
+            </div>
+
+            {/* Curated Theme Presets */}
+            <div>
+              <label className="block font-bold text-slate-700 mb-2">Paletas de Cores Oficiais Recomendadas</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {THEME_PRESETS.map(t => (
+                  <button
+                    key={t.name}
+                    type="button"
+                    onClick={() => {
+                      setSettings({
+                        ...settings,
+                        primary_color: t.primary,
+                        secondary_color: t.secondary,
+                        accent_color: t.accent
+                      });
+                    }}
+                    className="p-3 rounded-2xl border border-slate-200 hover:border-slate-400 text-left flex items-center gap-3 transition cursor-pointer bg-slate-50"
+                  >
+                    <div className="flex -space-x-1.5 shrink-0">
+                      <span style={{ backgroundColor: t.primary }} className="w-5 h-5 rounded-full border-2 border-white shadow-xs" />
+                      <span style={{ backgroundColor: t.secondary }} className="w-5 h-5 rounded-full border-2 border-white shadow-xs" />
+                      <span style={{ backgroundColor: t.accent }} className="w-5 h-5 rounded-full border-2 border-white shadow-xs" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-900 truncate">{t.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Color Pickers */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Cor Primária (Ouro/Marca)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={settings['primary_color'] || '#fdca04'}
+                    onChange={e => setSettings({ ...settings, primary_color: e.target.value })}
+                    className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5"
+                  />
+                  <input
+                    type="text"
+                    value={settings['primary_color'] || '#fdca04'}
+                    onChange={e => setSettings({ ...settings, primary_color: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Cor Secundária (Fundo Escuro)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={settings['secondary_color'] || '#0f172a'}
+                    onChange={e => setSettings({ ...settings, secondary_color: e.target.value })}
+                    className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5"
+                  />
+                  <input
+                    type="text"
+                    value={settings['secondary_color'] || '#0f172a'}
+                    onChange={e => setSettings({ ...settings, secondary_color: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Cor de Acento (Âmbar/Realce)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={settings['accent_color'] || '#f59e0b'}
+                    onChange={e => setSettings({ ...settings, accent_color: e.target.value })}
+                    className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5"
+                  />
+                  <input
+                    type="text"
+                    value={settings['accent_color'] || '#f59e0b'}
+                    onChange={e => setSettings({ ...settings, accent_color: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Live Theme Preview */}
+            <div className="pt-2">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-2">
+                Pré-visualização da Paleta no Site:
+              </span>
+              <div
+                style={{ backgroundColor: settings['secondary_color'] || '#0f172a' }}
+                className="p-4 rounded-2xl text-white shadow-md space-y-3 transition-colors border border-white/10"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <img src="/shop-da-cidade-logo-transparente.png" alt="" className="h-7 w-auto object-contain" />
+                    <span className="text-xs font-black">{settings['platform_name'] || 'Shop da Cidade'}</span>
+                  </div>
+                  <span
+                    style={{ backgroundColor: settings['primary_color'] || '#fdca04', color: '#0f172a' }}
+                    className="px-3 py-1 rounded-lg text-xs font-black shadow-xs"
+                  >
+                    Botão Principal
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300">
+                  {settings['banner_notice'] || 'Aviso no topo do site para os moradores de Canaã.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Platform Info & Contacts */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+            <h3 className="text-base font-black text-slate-900 tracking-tight">Textos e Informações Oficiais da Plataforma</h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Nome Oficial da Plataforma</label>
+                <input
+                  type="text"
+                  value={settings['platform_name'] || 'Shop da Cidade'}
+                  onChange={e => setSettings({ ...settings, platform_name: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Slogan / Tagline do Site</label>
+                <input
+                  type="text"
+                  value={settings['site_tagline'] || 'O Shopping Virtual da Sua Cidade'}
+                  onChange={e => setSettings({ ...settings, site_tagline: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Cidade Sede</label>
+                <input
+                  type="text"
+                  value={settings['city_name'] || 'Canaã dos Carajás'}
+                  onChange={e => setSettings({ ...settings, city_name: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Estado (UF)</label>
+                <input
+                  type="text"
+                  value={settings['city_state'] || 'PA'}
+                  onChange={e => setSettings({ ...settings, city_state: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">WhatsApp Oficial de Suporte</label>
+                <input
+                  type="text"
+                  value={settings['official_whatsapp'] || '(94) 99123-4567'}
+                  onChange={e => setSettings({ ...settings, official_whatsapp: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">E-mail de Atendimento</label>
+                <input
+                  type="email"
+                  value={settings['official_email'] || 'atendimento@shopdacidade.com.br'}
+                  onChange={e => setSettings({ ...settings, official_email: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Aviso Superior da Página Inicial</label>
+              <textarea
+                rows={2}
+                value={settings['banner_notice'] || ''}
+                onChange={e => setSettings({ ...settings, banner_notice: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+              />
+            </div>
+          </div>
+
+          {/* Section: PIX & Commission Parameters */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+            <h3 className="text-base font-black text-slate-900 tracking-tight">Financeiro, PIX e Taxas</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Chave PIX da Plataforma</label>
+                <input
+                  type="text"
+                  value={settings['pix_key'] || ''}
+                  onChange={e => setSettings({ ...settings, pix_key: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Nome do Beneficiário PIX</label>
+                <input
+                  type="text"
+                  value={settings['pix_beneficiary'] || ''}
+                  onChange={e => setSettings({ ...settings, pix_beneficiary: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Comissão Padrão Global (%)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={settings['default_commission_rate'] || '8.0'}
+                onChange={e => setSettings({ ...settings, default_commission_rate: e.target.value })}
+                className="w-full max-w-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSavingSettings}
+            className="px-8 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 transition cursor-pointer shadow-md disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {isSavingSettings ? 'Salvando...' : 'Salvar Cores e Configurações do Site'}
+          </button>
+        </form>
+      )}
+
+      {/* TAB: CLOUDFLARE D1 INTEGRATION */}
+      {activeTab === 'cloudflare' && (
+        <div className="space-y-6 max-w-4xl text-xs animate-in fade-in duration-200">
+          {/* Main Status & Configuration Card */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+              <div>
+                <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black uppercase tracking-wider">
+                  Cloudflare D1 • Edge SQL Database
+                </span>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2">
+                  <Database className="w-5 h-5 text-amber-500" />
+                  Banco de Dados Cloudflare (D1 & R2)
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  O Shop da Cidade foi projetado nativamente para a infraestrutura da <strong>Cloudflare</strong>. O <strong>Cloudflare D1</strong> é um banco de dados SQL relacional distribuído mundialmente na borda (edge), sem custos de egress e com performance instantânea.
+                </p>
+              </div>
+
+              <div className="shrink-0 p-3 bg-amber-50 rounded-2xl border border-amber-200 text-slate-900 text-center font-bold text-[11px] min-w-[140px]">
+                <Server className="w-5 h-5 mx-auto mb-1 text-amber-600" />
+                <span className="block font-black text-amber-900">
+                  {cfStats ? 'D1 Conectado' : 'Carregando...'}
+                </span>
+                <span className="text-[10px] text-slate-500">
+                  {cfStats ? `${cfStats.latencyMs}ms de latência` : 'Binding DB'}
+                </span>
+              </div>
+            </div>
+
+            {/* Live Database Status Overview */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Motor do Banco</span>
+                <strong className="text-xs text-slate-900 block mt-0.5 font-black truncate">Cloudflare D1 / SQLite</strong>
+              </div>
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Binding no Worker</span>
+                <strong className="text-xs text-slate-900 block mt-0.5 font-black font-mono">env.DB</strong>
+              </div>
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Total de Registros</span>
+                <strong className="text-xs text-amber-600 block mt-0.5 font-black">
+                  {cfStats ? cfStats.totalRecords.toLocaleString() : '...'} linhas
+                </strong>
+              </div>
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Tabelas Ativas</span>
+                <strong className="text-xs text-emerald-600 block mt-0.5 font-black">
+                  {cfStats ? `${cfStats.tables.length} tabelas` : '18 tabelas'}
+                </strong>
+              </div>
+            </div>
+
+            {/* Live Tables Count Badge Grid */}
+            {cfStats && cfStats.tables.length > 0 && (
+              <div className="pt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-slate-700 text-xs">Tabelas no Cloudflare D1:</span>
+                  <button
+                    type="button"
+                    onClick={loadCloudflareStats}
+                    disabled={isLoadingCfStats}
+                    className="text-[11px] text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isLoadingCfStats ? 'animate-spin' : ''}`} />
+                    Atualizar contagens
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {cfStats.tables.map(tbl => (
+                    <div
+                      key={tbl.name}
+                      onClick={() => setCfQuery(`SELECT * FROM ${tbl.name} LIMIT 10;`)}
+                      className="p-2 rounded-xl bg-white border border-slate-200 hover:border-amber-400 cursor-pointer transition flex items-center justify-between"
+                      title={`Clique para inspecionar SELECT * FROM ${tbl.name}`}
+                    >
+                      <span className="font-mono text-[11px] text-slate-700 truncate">{tbl.name}</span>
+                      <span className="px-1.5 py-0.5 rounded-md bg-slate-100 font-bold text-[10px] text-slate-600 shrink-0 ml-1">
+                        {tbl.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Configuration Inputs */}
+            <div className="pt-4 border-t border-slate-200 space-y-4">
+              <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-amber-500" />
+                Configurações do Cloudflare D1 e R2
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Nome do Banco D1 (database_name)
+                  </label>
+                  <input
+                    type="text"
+                    value={cfDatabaseName}
+                    onChange={e => setCfDatabaseName(e.target.value)}
+                    placeholder="shop_cidade_db"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-amber-500"
+                  />
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Nome definido em <strong>wrangler.jsonc</strong>.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    ID do Banco D1 (database_id)
+                  </label>
+                  <input
+                    type="text"
+                    value={cfDatabaseId}
+                    onChange={e => setCfDatabaseId(e.target.value)}
+                    placeholder="ex: 4a2b919d-7f55-4428-b8ce-e55502a3562a"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-amber-500"
+                  />
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Gerado pelo comando <code>wrangler d1 create</code>.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Cloudflare Account ID (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={cfAccountId}
+                    onChange={e => setCfAccountId(e.target.value)}
+                    placeholder="ex: 8f0293da2780e9812bc879a9"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-amber-500"
+                  />
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Encontrado no painel do Cloudflare (lado direito do Dashboard).
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Bucket R2 para Fotos e Mídias (r2_buckets)
+                  </label>
+                  <input
+                    type="text"
+                    value={cfR2Bucket}
+                    onChange={e => setCfR2Bucket(e.target.value)}
+                    placeholder="shop-cidade-media"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-amber-500"
+                  />
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Armazenamento de logos, fotos de produtos e banners sem custo de saída.
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleSaveCloudflareConfig}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-xs cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Salvar Configurações do Cloudflare</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={loadCloudflareStats}
+                  disabled={isLoadingCfStats}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingCfStats ? 'animate-spin' : ''}`} />
+                  <span>{isLoadingCfStats ? 'Verificando...' : 'Testar Conexão D1'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Interactive SQL Console (Cloudflare D1 Query Runner) */}
+            <div className="pt-6 border-t border-slate-200 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-amber-500" />
+                    Console SQL Interativo do Cloudflare D1
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Execute consultas SQL diretamente no banco de dados para inspecionar lojas, pedidos e tabelas.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCfQuery('SELECT id, name, slug, status, theme_color_primary FROM stores;')}
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] cursor-pointer"
+                  >
+                    Ver Lojas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCfQuery('SELECT * FROM platform_settings;')}
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] cursor-pointer"
+                  >
+                    Ver Configs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCfQuery('SELECT id, name, email, role FROM users LIMIT 10;')}
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] cursor-pointer"
+                  >
+                    Ver Usuários
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <textarea
+                  rows={3}
+                  value={cfQuery}
+                  onChange={e => setCfQuery(e.target.value)}
+                  placeholder="Ex: SELECT * FROM stores LIMIT 5;"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 text-emerald-400 font-mono text-xs rounded-xl border border-slate-800 focus:outline-none focus:border-amber-500"
+                />
+
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400">
+                    Dica: Suporta queries SELECT, INSERT, UPDATE e comandos SQLite D1.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleExecuteQuery}
+                    disabled={isExecutingQuery || !cfQuery.trim()}
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                  >
+                    <Terminal className={`w-3.5 h-3.5 ${isExecutingQuery ? 'animate-pulse' : ''}`} />
+                    <span>{isExecutingQuery ? 'Executando...' : 'Executar no D1'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Query Result Viewer */}
+              {queryResult && (
+                <div className="mt-3 p-3 bg-slate-950 text-slate-200 rounded-2xl border border-slate-800 space-y-2 font-mono text-xs overflow-hidden">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 pb-1 border-b border-slate-800">
+                    <span>
+                      Resultado: <strong className="text-white">{queryResult.rowCount}</strong> linha(s)
+                    </span>
+                    <span className="text-emerald-400">{queryResult.latencyMs}ms</span>
+                  </div>
+
+                  {queryResult.error ? (
+                    <div className="p-3 bg-rose-950/60 border border-rose-800 rounded-xl text-rose-300">
+                      <strong>Erro:</strong> {queryResult.error}
+                    </div>
+                  ) : queryResult.rows.length === 0 ? (
+                    <div className="py-4 text-center text-slate-500 text-xs">
+                      Nenhum registro retornado.
+                    </div>
+                  ) : (
+                    <div className="max-h-60 overflow-x-auto overflow-y-auto no-scrollbar">
+                      <table className="w-full text-left border-collapse text-[11px]">
+                        <thead>
+                          <tr className="border-b border-slate-800 text-amber-400">
+                            {queryResult.columns.map(col => (
+                              <th key={col} className="p-2 whitespace-nowrap font-bold">
+                                {col}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {queryResult.rows.map((row, idx) => (
+                            <tr key={idx} className="border-b border-slate-900 hover:bg-slate-900/60">
+                              {queryResult.columns.map(col => (
+                                <td key={col} className="p-2 whitespace-nowrap text-slate-300 max-w-xs truncate">
+                                  {typeof row[col] === 'object'
+                                    ? JSON.stringify(row[col])
+                                    : String(row[col] ?? 'null')}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Cloudflare Wrangler CLI Deployment Box */}
+            <div className="pt-6 border-t border-slate-200 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                    <Server className="w-4 h-4 text-amber-500" />
+                    Comandos Prontos do Cloudflare Wrangler CLI
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Use o terminal para criar o banco D1, aplicar migrações e publicar em produção na Cloudflare.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopyCommands}
+                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0"
+                  >
+                    {copiedCommands ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    <span>{copiedCommands ? 'Comandos Copiados!' : 'Copiar Comandos'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyD1SQL}
+                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0"
+                  >
+                    {copiedSql ? <Check className="w-4 h-4" /> : <FileCode className="w-4 h-4" />}
+                    <span>{copiedSql ? 'SQL D1 Copiado!' : 'Copiar Schema SQL'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Code snippet display */}
+              <div className="p-4 rounded-2xl bg-slate-950 text-slate-300 font-mono text-[11px] max-h-56 overflow-y-auto border border-slate-800 space-y-1.5">
+                <span className="text-amber-400 font-bold block"># 1. Criar o Banco D1 na sua conta Cloudflare:</span>
+                <p className="text-emerald-400 pl-2">npx wrangler d1 create {cfDatabaseName || 'shop_cidade_db'}</p>
+                <span className="text-slate-500 text-[10px] pl-2 block">↳ Copie o database_id retornado e cole no arquivo wrangler.jsonc</span>
+
+                <span className="text-amber-400 font-bold block pt-1"># 2. Criar o Bucket R2 para fotos e mídias:</span>
+                <p className="text-emerald-400 pl-2">npx wrangler r2 bucket create {cfR2Bucket || 'shop-cidade-media'}</p>
+
+                <span className="text-amber-400 font-bold block pt-1"># 3. Aplicar as migrações (18 tabelas) no Cloudflare D1 remoto:</span>
+                <p className="text-emerald-400 pl-2">npx wrangler d1 migrations apply {cfDatabaseName || 'shop_cidade_db'} --remote</p>
+
+                <span className="text-amber-400 font-bold block pt-1"># 4. Publicar a aplicação na borda da Cloudflare:</span>
+                <p className="text-emerald-400 pl-2">npm run build && npx wrangler deploy</p>
+              </div>
+
+              {/* Instructions */}
+              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-slate-700 space-y-1.5">
+                <strong className="text-slate-950 block font-bold">Por que o Cloudflare D1 é a escolha ideal para o Shop da Cidade:</strong>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li><strong>Zero Egress Fee:</strong> Tráfego gratuito ilimitado entre os Workers e o banco de dados.</li>
+                  <li><strong>Distribuído Globalmente:</strong> O banco responde em milissegundos direto do PoP de rede mais próximo do usuário.</li>
+                  <li><strong>Totalmente Serverless:</strong> Escala automaticamente de zero a milhões de acessos sem custos fixos de servidor.</li>
+                  <li><strong>Compatibilidade SQLite:</strong> Suporta transações ACID, chaves estrangeiras e índices rápidos.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: STORES */}
+      {activeTab === 'stores' && (
+        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="font-bold text-sm text-slate-900">Lojas Cadastradas no Shop da Cidade</h3>
+            <span className="text-xs text-slate-500">{storesList.length} estabelecimentos</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 border-b border-slate-100 font-bold text-slate-800">
+                <tr>
+                  <th className="px-4 py-3">Loja</th>
+                  <th className="px-4 py-3">Slug / Link</th>
+                  <th className="px-4 py-3">Bairro</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Destaque</th>
+                  <th className="px-4 py-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {storesList.map(s => (
+                  <tr key={s.id} className="hover:bg-slate-50/60">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <img src={s.logo_url} alt="" className="w-8 h-8 rounded-lg object-cover bg-slate-100 shrink-0" />
+                        <div>
+                          <span className="font-bold text-slate-900 block">{s.name}</span>
+                          <span className="text-[10px] text-slate-400">{s.category}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-[11px] text-amber-700">/loja/{s.slug}</td>
+                    <td className="px-4 py-3">{s.neighborhood}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        s.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {s.status === 'active' ? 'Ativa' : 'Pendente'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {s.is_featured ? (
+                        <span className="text-amber-500 font-bold">★ Em Alta</span>
+                      ) : (
+                        <span className="text-slate-400">Padrão</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => onNavigate('store-detail', s.slug)}
+                          className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-700 font-semibold text-[11px] cursor-pointer hover:bg-slate-100"
+                        >
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => handleUpdateStore(s.id, s.status === 'active' ? 'suspended' : 'active', s.is_featured ? 1 : 0)}
+                          className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-700 font-semibold text-[11px] cursor-pointer hover:bg-slate-100"
+                        >
+                          {s.status === 'active' ? 'Suspender' : 'Aprovar'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: USERS */}
+      {activeTab === 'users' && (
+        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="font-bold text-sm text-slate-900">Usuários Registrados</h3>
+            <span className="text-xs text-slate-500">{usersList.length} cadastros</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 border-b border-slate-100 font-bold text-slate-800">
+                <tr>
+                  <th className="px-4 py-3">Nome</th>
+                  <th className="px-4 py-3">E-mail</th>
+                  <th className="px-4 py-3">Telefone</th>
+                  <th className="px-4 py-3">Perfil / Role</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {usersList.map(u => (
+                  <tr key={u.id} className="hover:bg-slate-50/60">
+                    <td className="px-4 py-3 font-bold text-slate-900">{u.name}</td>
+                    <td className="px-4 py-3 text-slate-600">{u.email}</td>
+                    <td className="px-4 py-3 text-slate-600">{u.phone || '-'}</td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 font-bold uppercase text-[10px]">
+                        {u.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        u.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                      }`}>
+                        {u.is_active ? 'Ativo' : 'Bloqueado'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => handleUpdateUser(u.id, u.role, u.is_active ? 0 : 1)}
+                        className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-700 font-semibold text-[11px] cursor-pointer hover:bg-slate-100"
+                      >
+                        {u.is_active ? 'Bloquear' : 'Desbloquear'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: PROVIDERS */}
+      {activeTab === 'providers' && (
+        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="font-bold text-sm text-slate-900">Prestadores de Serviços Parceiros</h3>
+            <span className="text-xs text-slate-500">{providersList.length} cadastrados</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 border-b border-slate-100 font-bold text-slate-800">
+                <tr>
+                  <th className="px-4 py-3">Profissional</th>
+                  <th className="px-4 py-3">Categoria</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {providersList.map(p => (
+                  <tr key={p.id} className="hover:bg-slate-50/60">
+                    <td className="px-4 py-3 font-bold text-slate-900">{p.business_name}</td>
+                    <td className="px-4 py-3 text-slate-600">{p.category_id}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        p.is_approved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {p.is_approved ? 'Aprovado' : 'Pendente'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => handleUpdateProvider(p.id, p.is_approved ? 0 : 1, p.is_featured ? 1 : 0)}
+                        className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-700 font-semibold text-[11px] cursor-pointer hover:bg-slate-100"
+                      >
+                        {p.is_approved ? 'Desativar' : 'Aprovar'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: BANNERS */}
+      {activeTab === 'banners' && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-bold text-sm text-slate-900">Banners Promocionais da Home</h3>
+            <button
+              onClick={() => setIsBannerModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <Plus className="w-4 h-4" /> Novo Banner
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {bannersList.map(b => (
+              <div key={b.id} className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs flex flex-col justify-between">
+                <img src={b.image_url} alt="" className="h-40 w-full object-cover" />
+                <div className="p-4 space-y-2">
+                  <h4 className="font-bold text-sm text-slate-900">{b.title}</h4>
+                  <p className="text-xs text-slate-500">{b.subtitle}</p>
+                  <div className="pt-2 flex justify-between items-center text-xs">
+                    <span className="text-slate-400">Posição: {b.position}</span>
+                    <button
+                      onClick={() => handleDeleteBanner(b.id)}
+                      className="text-rose-600 hover:underline font-semibold cursor-pointer"
+                    >
+                      Remover Banner
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: AUDIT LOGS */}
+      {activeTab === 'logs' && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs space-y-3 text-xs">
+          <h3 className="font-bold text-sm text-slate-900">Registros de Auditoria Administrativa</h3>
+          <div className="divide-y divide-slate-100">
+            {auditLogs.map(l => (
+              <div key={l.id} className="py-2.5 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-slate-900">{l.action}</span>
+                  <span className="text-slate-500 ml-2">por {l.user_name || 'Superadmin'}</span>
+                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">{l.details_json}</p>
+                </div>
+                <span className="text-[10px] text-slate-400 shrink-0">{formatDateBR(l.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* NEW BANNER MODAL */}
+      {isBannerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl bg-white border border-slate-200 p-6 shadow-2xl relative text-slate-900">
+            <button onClick={() => setIsBannerModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700">
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="font-bold text-base text-slate-900 mb-4">Adicionar Banner na Home</h3>
+            <form onSubmit={handleCreateBanner} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Título do Banner</label>
+                <input
+                  type="text"
+                  required
+                  value={bannerTitle}
+                  onChange={e => setBannerTitle(e.target.value)}
+                  placeholder="Ex: Semana de Ofertas no Comércio de Canaã"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Subtítulo</label>
+                <input
+                  type="text"
+                  value={bannerSubtitle}
+                  onChange={e => setBannerSubtitle(e.target.value)}
+                  placeholder="Ex: Compre com frete grátis e receba em até 50 min"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">URL da Imagem do Banner</label>
+                <input
+                  type="text"
+                  required
+                  value={bannerImage}
+                  onChange={e => setBannerImage(e.target.value)}
+                  placeholder="https://images.unsplash.com/..."
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsBannerModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow-md cursor-pointer"
+                >
+                  Criar Banner
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
