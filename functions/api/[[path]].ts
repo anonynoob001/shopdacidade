@@ -43,30 +43,50 @@ export async function onRequest(context: any): Promise<Response> {
     }
   }
 
-  const db = getDb(env);
+  try {
+    const db = getDb(env);
 
-  const apiRes = await dispatchApiRequest(
-    {
-      method: request.method,
-      path: url.pathname,
-      query: queryObj,
-      headers: headersObj,
-      body
-    },
-    db
-  );
+    const apiRes = await dispatchApiRequest(
+      {
+        method: request.method,
+        path: url.pathname,
+        query: queryObj,
+        headers: headersObj,
+        body
+      },
+      db
+    );
 
-  const responseHeaders = new Headers({
-    'Content-Type': 'application/json; charset=utf-8',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    ...(apiRes.headers || {})
-  });
+    const responseHeaders = new Headers({
+      'Content-Type': 'application/json; charset=utf-8',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      ...(apiRes.headers || {})
+    });
 
-  const bodyContent = typeof apiRes.data === 'string' ? apiRes.data : JSON.stringify(apiRes.data);
-  return new Response(bodyContent, {
-    status: apiRes.status,
-    headers: responseHeaders
-  });
+    const bodyContent = typeof apiRes.data === 'string' ? apiRes.data : JSON.stringify(apiRes.data);
+    return new Response(bodyContent, {
+      status: apiRes.status,
+      headers: responseHeaders
+    });
+  } catch (err: any) {
+    console.error('Unhandled Pages Function error:', err);
+    return new Response(
+      JSON.stringify({
+        error: 'Erro interno no servidor Cloudflare Pages Function',
+        message: err?.message || 'Erro inesperado',
+        path: url.pathname
+      }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      }
+    );
+  }
 }

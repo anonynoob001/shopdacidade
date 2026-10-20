@@ -5,6 +5,7 @@ import { handleAdminRoutes } from './routes/admin';
 import { handleAuthRoutes } from './routes/auth';
 import { handleDeliveriesRoutes } from './routes/deliveries';
 import { handleOrdersRoutes } from './routes/orders';
+import { handlePaymentsRoutes } from './routes/payments';
 import { handleProductsRoutes } from './routes/products';
 import { handlePublicRoutes } from './routes/public';
 import { handleServicesRoutes } from './routes/services';
@@ -38,8 +39,7 @@ async function ensureDatabaseReady(db: DatabaseAdapter) {
     if (!table) {
       console.log('[Shop da Cidade] Initializing D1 database schema and seeds...');
       await db.exec(INITIAL_SCHEMA_SQL);
-      await seedDatabase(db);
-      console.log('[Shop da Cidade] D1 database initialized successfully.');
+      console.log('[Shop da Cidade] D1 database initialized successfully with schema and seed data.');
     }
     dbReady = true;
   } catch (err) {
@@ -91,7 +91,11 @@ export async function dispatchApiRequest(req: ApiRequest, db: DatabaseAdapter): 
     const adminRes = await handleAdminRoutes(req, db);
     if (adminRes) return adminRes;
 
-    // 9. Manual Cron Trigger endpoint (for testing cron jobs)
+    // 9. Asaas Payments routes
+    const payRes = await handlePaymentsRoutes(req, db);
+    if (payRes) return payRes;
+
+    // 10. Manual Cron Trigger endpoint (for testing cron jobs)
     if (req.method === 'POST' && req.path === '/api/cron/run') {
       if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'superadmin')) {
         return { status: 403, data: { error: 'Acesso restrito.' } };

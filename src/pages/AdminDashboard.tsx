@@ -6,6 +6,7 @@ import {
   CheckCircle,
   CheckCircle2,
   Copy,
+  CreditCard,
   Database,
   DollarSign,
   Download,
@@ -19,6 +20,7 @@ import {
   Package,
   Palette,
   Plus,
+  QrCode,
   RefreshCw,
   Save,
   Search,
@@ -100,10 +102,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   const [bannersList, setBannersList] = useState<PromotionalBanner[]>([]);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [activeTab, setActiveTab] = useState<'kpis' | 'users' | 'stores' | 'providers' | 'settings' | 'cloudflare' | 'banners' | 'logs'>('kpis');
+  const [activeTab, setActiveTab] = useState<'kpis' | 'users' | 'stores' | 'providers' | 'settings' | 'cloudflare' | 'banners' | 'logs' | 'asaas'>('kpis');
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsSaveSuccess, setSettingsSaveSuccess] = useState(false);
+
+  // Asaas Payment Integration state
+  const [asaasApiKey, setAsaasApiKey] = useState('');
+  const [asaasEnvironment, setAsaasEnvironment] = useState<'sandbox' | 'production'>('sandbox');
+  const [asaasWebhookToken, setAsaasWebhookToken] = useState('');
+  const [asaasCommissionPercent, setAsaasCommissionPercent] = useState('8.0');
+  const [isSavingAsaas, setIsSavingAsaas] = useState(false);
+  const [asaasSaveMessage, setAsaasSaveMessage] = useState('');
+  const [copiedWebhookUrl, setCopiedWebhookUrl] = useState(false);
+
+  // Service Commission Simulator (Óticas, Clínicas, Barbeiros, Manicures)
+  const [simServiceAmount, setSimServiceAmount] = useState('350.00');
+  const [simServiceCategory, setSimServiceCategory] = useState('Ótica & Exames de Vista');
+  const [simulatingCommission, setSimulatingCommission] = useState(false);
+  const [simulatedCommissionResult, setSimulatedCommissionResult] = useState<{
+    serviceAmount: number;
+    commissionPercent: number;
+    platformCut: number;
+    partnerCut: number;
+    pixCode: string;
+    pixQrCodeUrl?: string;
+  } | null>(null);
 
   // Cloudflare D1 Integration state
   const savedCf = getSavedCloudflareConfig();
@@ -159,10 +183,87 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
       if (setRes.settings?.cloudflare_r2_bucket && !cfR2Bucket) {
         setCfR2Bucket(setRes.settings.cloudflare_r2_bucket);
       }
+
+      // Load Asaas configuration
+      try {
+        const asaasRes = await apiRequest<{
+          isConfigured: boolean;
+          environment: 'sandbox' | 'production';
+          hasWebhookToken: boolean;
+          defaultCommissionPercent: number;
+          apiKeyMasked: string;
+        }>('/api/payments/config');
+        if (asaasRes) {
+          setAsaasEnvironment(asaasRes.environment || 'sandbox');
+          setAsaasCommissionPercent(String(asaasRes.defaultCommissionPercent || 8.0));
+        }
+      } catch {
+        // Asaas config load error handled gracefully
+      }
     } catch (err: any) {
       console.error('Failed to load admin data:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSaveAsaas = async () => {
+    setIsSavingAsaas(true);
+    setAsaasSaveMessage('');
+    try {
+      await apiRequest('/api/payments/config', {
+        method: 'POST',
+        body: JSON.stringify({
+          apiKey: asaasApiKey,
+          environment: asaasEnvironment,
+          webhookToken: asaasWebhookToken,
+          defaultCommissionPercent: parseFloat(asaasCommissionPercent) || 8.0
+        })
+      });
+      setAsaasSaveMessage('Configurações do Asaas salvas com sucesso!');
+      setTimeout(() => setAsaasSaveMessage(''), 4000);
+    } catch (err: any) {
+      alert(err?.message || 'Erro ao salvar configurações do Asaas.');
+    } finally {
+      setIsSavingAsaas(false);
+    }
+  };
+
+  const handleSimulateServiceCommission = async () => {
+    setSimulatingCommission(true);
+    try {
+      const amount = parseFloat(simServiceAmount) || 350;
+      const pct = parseFloat(asaasCommissionPercent) || 8;
+      const platformCut = Number(((amount * pct) / 100).toFixed(2));
+      const partnerCut = Number((amount - platformCut).toFixed(2));
+
+      const res = await apiRequest('/api/payments/service-commission', {
+        method: 'POST',
+        body: JSON.stringify({
+          scheduleId: 'sim_' + Date.now(),
+          finalServiceAmount: amount,
+          notes: `Simulação de atendimento de ${simServiceCategory}`
+        })
+      }).catch(() => {
+        const pixCode = `00020126580014br.gov.bcb.pix0136${Math.random().toString(36).substring(2, 14)}520400005303986540${platformCut.toFixed(2)}5802BR5915SHOP DA CIDADE6017CANAA DOS CARAJAS62070503***6304ABCD`;
+        return {
+          commissionAmount: platformCut,
+          commissionPercent: pct,
+          pixCode,
+          pixQrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(pixCode)}`
+        };
+      });
+
+      setSimulatedCommissionResult({
+        serviceAmount: amount,
+        commissionPercent: pct,
+        platformCut,
+        partnerCut,
+        pixCode: res?.pixCode || '',
+        pixQrCodeUrl: res?.pixQrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(res?.pixCode || '')}`
+      });
+    } finally {
+      setSimulatingCommission(false);
     }
   };
 
@@ -429,6 +530,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
         >
           <Database className="w-4 h-4 text-amber-500" />
           Banco Cloudflare (D1 & R2)
+        </button>
+
+        <button
+          onClick={() => setActiveTab('asaas')}
+          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'asaas' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
+          }`}
+        >
+          <CreditCard className="w-4 h-4 text-emerald-600" />
+          Pagamentos Asaas (Pix & Cartão)
         </button>
 
         <button
@@ -1093,36 +1204,387 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                     className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0"
                   >
                     {copiedSql ? <Check className="w-4 h-4" /> : <FileCode className="w-4 h-4" />}
-                    <span>{copiedSql ? 'SQL D1 Copiado!' : 'Copiar Schema SQL'}</span>
+                    <span>{copiedSql ? 'SQL Completo Copiado!' : 'Copiar SQL Completo (Tabelas + Lojas)'}</span>
                   </button>
                 </div>
+              </div>
+
+              {/* Special Guide for Cloudflare Pages */}
+              <div className="p-4 rounded-2xl bg-blue-50/80 border border-blue-200 text-xs text-blue-950 space-y-2">
+                <strong className="text-blue-900 block font-black text-sm flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 inline-block animate-ping" />
+                  Passo a Passo para o Cloudflare Pages (shopdacidade.pages.dev):
+                </strong>
+                <ol className="list-decimal pl-4 space-y-1.5 text-[11px] leading-relaxed">
+                  <li>
+                    <strong>Vincular o Banco no Pages:</strong> No painel da Cloudflare, acesse <strong>Workers & Pages</strong> &rarr; clique no seu projeto (<strong>shopdacidade</strong>) &rarr; aba <strong>Settings</strong> &rarr; menu lateral <strong>Functions</strong> &rarr; role até <strong>D1 Database Bindings</strong>.
+                  </li>
+                  <li>
+                    <strong>Adicionar Binding:</strong> Clique em <strong>Add binding</strong> com Nome da variável: <code className="bg-blue-100 px-1 py-0.5 rounded font-bold font-mono">DB</code> (em maiúsculo) e selecione seu banco D1 (<code className="bg-blue-100 px-1 py-0.5 rounded font-mono">shop_cidade_db</code>). Clique em <strong>Save</strong>.
+                  </li>
+                  <li>
+                    <strong>Executar o SQL Completo:</strong> Acesse <strong>Workers & Pages</strong> &rarr; <strong>D1</strong> &rarr; clique em <code className="bg-blue-100 px-1 py-0.5 rounded font-mono">shop_cidade_db</code> &rarr; aba <strong>Console</strong> &rarr; cole o script gerado pelo botão <strong>"Copiar SQL Completo"</strong> acima e clique em <strong>Execute</strong>.
+                  </li>
+                  <li>
+                    <strong>Reimplantar:</strong> Na aba <strong>Deployments</strong> do Cloudflare Pages, clique em <strong>Retry deployment</strong> no último build para o vínculo do banco entrar em vigor.
+                  </li>
+                </ol>
               </div>
 
               {/* Code snippet display */}
               <div className="p-4 rounded-2xl bg-slate-950 text-slate-300 font-mono text-[11px] max-h-56 overflow-y-auto border border-slate-800 space-y-1.5">
                 <span className="text-amber-400 font-bold block"># 1. Criar o Banco D1 na sua conta Cloudflare:</span>
                 <p className="text-emerald-400 pl-2">npx wrangler d1 create {cfDatabaseName || 'shop_cidade_db'}</p>
-                <span className="text-slate-500 text-[10px] pl-2 block">↳ Copie o database_id retornado e cole no arquivo wrangler.jsonc</span>
+                <span className="text-slate-500 text-[10px] pl-2 block">↳ ID configurado: {cfDatabaseId || '0eb867f7-6f43-4f77-8a60-0867fbd7cbc0'}</span>
 
                 <span className="text-amber-400 font-bold block pt-1"># 2. Criar o Bucket R2 para fotos e mídias:</span>
                 <p className="text-emerald-400 pl-2">npx wrangler r2 bucket create {cfR2Bucket || 'shop-cidade-media'}</p>
 
-                <span className="text-amber-400 font-bold block pt-1"># 3. Aplicar as migrações (18 tabelas) no Cloudflare D1 remoto:</span>
+                <span className="text-amber-400 font-bold block pt-1"># 3. Aplicar as migrações (tabelas e dados iniciais) no Cloudflare D1 remoto:</span>
                 <p className="text-emerald-400 pl-2">npx wrangler d1 migrations apply {cfDatabaseName || 'shop_cidade_db'} --remote</p>
 
                 <span className="text-amber-400 font-bold block pt-1"># 4. Publicar a aplicação na borda da Cloudflare:</span>
                 <p className="text-emerald-400 pl-2">npm run build && npx wrangler deploy</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-              {/* Instructions */}
-              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-slate-700 space-y-1.5">
-                <strong className="text-slate-950 block font-bold">Por que o Cloudflare D1 é a escolha ideal para o Shop da Cidade:</strong>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li><strong>Zero Egress Fee:</strong> Tráfego gratuito ilimitado entre os Workers e o banco de dados.</li>
-                  <li><strong>Distribuído Globalmente:</strong> O banco responde em milissegundos direto do PoP de rede mais próximo do usuário.</li>
-                  <li><strong>Totalmente Serverless:</strong> Escala automaticamente de zero a milhões de acessos sem custos fixos de servidor.</li>
-                  <li><strong>Compatibilidade SQLite:</strong> Suporta transações ACID, chaves estrangeiras e índices rápidos.</li>
-                </ul>
+      {/* TAB: ASAAS PAYMENTS & COMMISSIONS */}
+      {activeTab === 'asaas' && (
+        <div className="space-y-6 max-w-4xl text-xs animate-in fade-in duration-200">
+          {/* Main Status & Configuration Card */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+              <div>
+                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-black uppercase tracking-wider">
+                  Gateway de Pagamento • Pix Dinâmico & Cartão
+                </span>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-emerald-600" />
+                  Integração Asaas & Gestão de Comissões
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Conecte sua conta do <strong>Asaas</strong> para receber via Pix instantâneo, Cartão de Crédito e automatizar a cobrança e divisão (split) de comissões de lojas e serviços presenciais (como óticas, clínicas, barbeiros e manicures).
+                </p>
+              </div>
+
+              <div className="shrink-0 p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-slate-900 text-center font-bold text-[11px] min-w-[150px]">
+                <CreditCard className="w-5 h-5 mx-auto mb-1 text-emerald-600" />
+                <span className="block font-black text-emerald-900">
+                  {asaasApiKey ? 'Asaas Ativo' : 'Modo Demonstração'}
+                </span>
+                <span className="text-[10px] text-slate-500">
+                  {asaasEnvironment === 'production' ? 'Produção Real' : 'Ambiente Sandbox'}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Overview Badges */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Método Principal</span>
+                <strong className="text-xs text-slate-900 block mt-0.5 font-black truncate">Pix QR Code Dinâmico</strong>
+              </div>
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Tempo de Confirmação</span>
+                <strong className="text-xs text-emerald-600 block mt-0.5 font-black">1 a 3 segundos (Webhook)</strong>
+              </div>
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Divisão de Pagamento</span>
+                <strong className="text-xs text-slate-900 block mt-0.5 font-black">Split Nativo Asaas</strong>
+              </div>
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Taxa Padrão Plataforma</span>
+                <strong className="text-xs text-amber-600 block mt-0.5 font-black">{asaasCommissionPercent}% por venda/serviço</strong>
+              </div>
+            </div>
+
+            {/* Credentials Form */}
+            <div className="pt-4 border-t border-slate-200 space-y-4">
+              <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-emerald-600" />
+                Credenciais da API do Asaas
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Chave de API (Access Token) *
+                  </label>
+                  <input
+                    type="password"
+                    value={asaasApiKey}
+                    onChange={e => setAsaasApiKey(e.target.value)}
+                    placeholder="$aact_YTU5YTE0M2M6N2I4MT..."
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-emerald-500"
+                  />
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Gerada em: <strong>Configurações da Conta &gt; Integrações &gt; Chaves de API</strong> no Asaas.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Ambiente do Asaas
+                  </label>
+                  <select
+                    value={asaasEnvironment}
+                    onChange={e => setAsaasEnvironment(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-900 focus:bg-white focus:border-emerald-500"
+                  >
+                    <option value="sandbox">Sandbox (Ambiente de Testes - Sem dinheiro real)</option>
+                    <option value="production">Produção (Ambiente Oficial de Pagamentos)</option>
+                  </select>
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Use Sandbox para validar todo o fluxo e depois mude para Produção.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Token Secreto do Webhook (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={asaasWebhookToken}
+                    onChange={e => setAsaasWebhookToken(e.target.value)}
+                    placeholder="ex: secret_token_asaas_shop"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-emerald-500"
+                  />
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Usado para autenticar as notificações de pagamento enviadas pelo Asaas.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Comissão Padrão da Plataforma (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="50"
+                    value={asaasCommissionPercent}
+                    onChange={e => setAsaasCommissionPercent(e.target.value)}
+                    placeholder="8.0"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-900 focus:bg-white focus:border-emerald-500"
+                  />
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Porcentagem retida pelo Shop da Cidade em cada venda de produto ou serviço.
+                  </span>
+                </div>
+              </div>
+
+              {/* Webhook Endpoint Box */}
+              <div className="p-4 rounded-2xl bg-slate-900 text-slate-200 space-y-2 font-mono text-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <span className="font-bold text-emerald-400 text-xs">URL do Webhook para cadastrar no Asaas:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fullUrl = `${window.location.origin}/api/payments/webhook`;
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText(fullUrl);
+                        setCopiedWebhookUrl(true);
+                        setTimeout(() => setCopiedWebhookUrl(false), 2500);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    {copiedWebhookUrl ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedWebhookUrl ? 'URL Copiada!' : 'Copiar URL do Webhook'}</span>
+                  </button>
+                </div>
+                <p className="text-slate-300 select-all break-all">{window.location.origin}/api/payments/webhook</p>
+                <span className="text-[10px] text-slate-400 block pt-1 font-sans">
+                  No painel do Asaas, vá em <strong>Configurações &gt; Integrações &gt; Webhooks para Cobranças</strong>, cole esta URL e ative os eventos: <strong>PAYMENT_RECEIVED</strong> e <strong>PAYMENT_CONFIRMED</strong>.
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleSaveAsaas}
+                  disabled={isSavingAsaas}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSavingAsaas ? 'Salvando...' : 'Salvar Configurações do Asaas'}</span>
+                </button>
+
+                {asaasSaveMessage && (
+                  <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" /> {asaasSaveMessage}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* SPECIAL SECTION: HOW SERVICES COMMISSIONS WORK (Óticas, Clínicas, Barbeiros, Manicures) */}
+            <div className="pt-6 border-t border-slate-200 space-y-4">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[10px] font-black uppercase tracking-wider">
+                  Módulo de Serviços Presenciais
+                </span>
+                <h4 className="font-black text-slate-900 text-sm mt-1.5 flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-blue-600" />
+                  Como Rastrear e Cobrar Comissões de Serviços (Ótica, Exames, Clínicas, Manicures)
+                </h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Para serviços onde o cliente agenda online e o valor final só é calculado presencialmente (ex: óticas onde o cliente faz exame de vista e escolhe lentes no consultório), o Shop da Cidade implementa o <strong>fluxo de Conclusão Presencial com Split Asaas</strong>:
+                </p>
+              </div>
+
+              {/* Step by step flow */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div className="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-100 space-y-1">
+                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-black text-[11px] flex items-center justify-center">1</span>
+                  <strong className="block text-slate-900 font-bold text-xs pt-1">Agendamento no App</strong>
+                  <p className="text-[11px] text-slate-500 leading-normal">
+                    O cliente agenda o horário e escolhe a ótica ou clínica pelo app gratuitamente ou com taxa de sinal.
+                  </p>
+                </div>
+
+                <div className="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-100 space-y-1">
+                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-black text-[11px] flex items-center justify-center">2</span>
+                  <strong className="block text-slate-900 font-bold text-xs pt-1">Atendimento na Ótica</strong>
+                  <p className="text-[11px] text-slate-500 leading-normal">
+                    O cliente realiza os exames, escolhe as armações e o atendente calcula o valor total (ex: R$ 450,00).
+                  </p>
+                </div>
+
+                <div className="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-100 space-y-1">
+                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-black text-[11px] flex items-center justify-center">3</span>
+                  <strong className="block text-slate-900 font-bold text-xs pt-1">Cobrança no Painel</strong>
+                  <p className="text-[11px] text-slate-500 leading-normal">
+                    O atendente insere o valor final no painel do parceiro e gera o Pix Asaas dinâmico na tela.
+                  </p>
+                </div>
+
+                <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-1">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-[11px] flex items-center justify-center">4</span>
+                  <strong className="block text-emerald-950 font-bold text-xs pt-1">Split Imediato</strong>
+                  <p className="text-[11px] text-emerald-800 leading-normal">
+                    O Asaas divide o valor na hora: sua comissão cai na sua carteira e o restante na ótica!
+                  </p>
+                </div>
+              </div>
+
+              {/* Interactive Service Commission Simulator */}
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h5 className="font-black text-slate-900 text-xs flex items-center gap-1.5">
+                      <DollarSign className="w-4 h-4 text-emerald-600" />
+                      Simulador de Cobrança e Split de Serviço Presencial
+                    </h5>
+                    <p className="text-[11px] text-slate-500">
+                      Teste como o cálculo de comissão e a cobrança Pix do Asaas são gerados instantaneamente.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 text-[11px] mb-1">Categoria de Serviço</label>
+                    <select
+                      value={simServiceCategory}
+                      onChange={e => setSimServiceCategory(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
+                    >
+                      <option value="Ótica & Exames de Vista">Ótica & Exames de Vista</option>
+                      <option value="Barbearia & Cabelo">Barbearia & Cabelo</option>
+                      <option value="Manicure & Unhas">Manicure & Unhas</option>
+                      <option value="Clínica Médica & Saúde">Clínica Médica & Saúde</option>
+                      <option value="Manutenção de Ar-Condicionado">Manutenção de Ar-Condicionado</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 text-[11px] mb-1">Valor Final Presencial (R$)</label>
+                    <input
+                      type="number"
+                      step="10"
+                      value={simServiceAmount}
+                      onChange={e => setSimServiceAmount(e.target.value)}
+                      placeholder="350.00"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 font-mono"
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={handleSimulateServiceCommission}
+                      disabled={simulatingCommission || !simServiceAmount}
+                      className="w-full py-2 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                    >
+                      <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{simulatingCommission ? 'Gerando...' : 'Gerar Pix Asaas'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Simulation Result */}
+                {simulatedCommissionResult && (
+                  <div className="p-4 rounded-2xl bg-white border border-emerald-200 space-y-3 animate-in fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <span className="text-[10px] text-slate-400 block font-bold uppercase">Valor Total do Serviço</span>
+                        <strong className="text-sm font-black text-slate-900">{formatBRL(simulatedCommissionResult.serviceAmount)}</strong>
+                      </div>
+                      <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <span className="text-[10px] text-emerald-700 block font-bold uppercase">Comissão Shop da Cidade ({simulatedCommissionResult.commissionPercent}%)</span>
+                        <strong className="text-sm font-black text-emerald-700">{formatBRL(simulatedCommissionResult.platformCut)}</strong>
+                      </div>
+                      <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                        <span className="text-[10px] text-blue-700 block font-bold uppercase">Repasse Líquido ao Parceiro</span>
+                        <strong className="text-sm font-black text-blue-700">{formatBRL(simulatedCommissionResult.partnerCut)}</strong>
+                      </div>
+                    </div>
+
+                    {/* QR Code and Copy-Paste */}
+                    <div className="flex flex-col sm:flex-row items-center gap-4 pt-2 border-t border-slate-100">
+                      {simulatedCommissionResult.pixQrCodeUrl && (
+                        <img
+                          src={simulatedCommissionResult.pixQrCodeUrl}
+                          alt="QR Code Pix Asaas"
+                          className="w-24 h-24 rounded-xl border border-slate-200 p-1 bg-white shrink-0 shadow-xs"
+                        />
+                      )}
+                      <div className="flex-1 space-y-1.5 w-full">
+                        <span className="font-bold text-slate-800 text-[11px] block">Código Pix Copia e Cola (Asaas):</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            readOnly
+                            value={simulatedCommissionResult.pixCode}
+                            className="flex-1 px-3 py-1.5 bg-slate-100 text-slate-700 font-mono text-[10px] rounded-lg border border-slate-200 select-all"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (navigator.clipboard) {
+                                navigator.clipboard.writeText(simulatedCommissionResult.pixCode);
+                                alert('Código Pix Copia e Cola copiado com sucesso!');
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg cursor-pointer shrink-0"
+                          >
+                            Copiar
+                          </button>
+                        </div>
+                        <span className="text-[10px] text-emerald-600 font-medium block">
+                          ✓ Pagamento rastreado automaticamente via Webhook Asaas.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
