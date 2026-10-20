@@ -5,26 +5,16 @@
   "compatibility_date": "2024-09-23",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
-    "directory": "./dist",
-    "binding": "ASSETS"
+    "directory": "./dist"
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "shop_cidade_db",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "0eb867f7-6f43-4f77-8a60-0867fbd7cbc0",
       "migrations_dir": "migrations"
     }
   ],
-  "r2_buckets": [
-    {
-      "binding": "MEDIA_BUCKET",
-      "bucket_name": "shop-cidade-media"
-    }
-  ],
-  "triggers": {
-    "crons": ["0 3 * * *", "*/30 * * * *"]
-  },
   "vars": {
     "ENVIRONMENT": "production",
     "APP_URL": "https://shopdacidade.com.br",

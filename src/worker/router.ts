@@ -10,6 +10,8 @@ import { handlePublicRoutes } from './routes/public';
 import { handleServicesRoutes } from './routes/services';
 import { handleStoresRoutes } from './routes/stores';
 import { getUserByToken } from './services/auth';
+import { INITIAL_SCHEMA_SQL } from './schema_ddl';
+import { seedDatabase } from './services/seed';
 import { User } from './types';
 
 export interface ApiRequest {
@@ -27,8 +29,29 @@ export interface ApiResponse {
   data: any;
 }
 
+let dbReady = false;
+
+async function ensureDatabaseReady(db: DatabaseAdapter) {
+  if (dbReady) return;
+  try {
+    const table = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").first();
+    if (!table) {
+      console.log('[Shop da Cidade] Initializing D1 database schema and seeds...');
+      await db.exec(INITIAL_SCHEMA_SQL);
+      await seedDatabase(db);
+      console.log('[Shop da Cidade] D1 database initialized successfully.');
+    }
+    dbReady = true;
+  } catch (err) {
+    console.error('[Shop da Cidade] DB auto-init error:', err);
+  }
+}
+
 export async function dispatchApiRequest(req: ApiRequest, db: DatabaseAdapter): Promise<ApiResponse> {
   try {
+    // Auto-initialize schema if tables are not yet created in D1
+    await ensureDatabaseReady(db);
+
     // Extract user from authorization header or cookie if present
     const authHeader = req.headers['authorization'] || req.headers['Authorization'];
     const token = authHeader?.replace(/^Bearer\s+/i, '');
