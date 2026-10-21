@@ -1,3 +1,4 @@
+PRAGMA foreign_keys = OFF;
 -- Migration 0001: Initial schema for Shop Carajás (Cloudflare D1 SQLite & local SQLite)
 
 CREATE TABLE IF NOT EXISTS users (
@@ -461,7 +462,7 @@ INSERT OR IGNORE INTO service_categories (id, name, slug, icon, description, sor
 ('scat_obras', 'Pedreiros, Pintores & Reformas', 'pedreiros-pintores-reformas', 'Paintbrush', 'Construção, assentamento de pisos, porcelanato e pintura geral.', 6),
 ('scat_limpeza', 'Diaristas, Faxina & Pós-Obra', 'diaristas-faxina', 'Sparkles', 'Profissionais de limpeza residencial, comercial e pós-obra.', 7);
 
--- Users (Senhas criptografadas com hash sha256 salt; senha padrão '123456')
+-- Users (Senhas criptografadas com hash sha256 salt - senha padrão '123456')
 INSERT OR IGNORE INTO users (id, name, email, password_hash, salt, phone, role, is_active) VALUES
 ('usr_superadmin', 'Administrador Shop da Cidade', 'admin@shopcarajas.com.br', 'e6378e9f565ecfa74f4b23d9faaf2f122e1329bf927de0d65b7410eb8a61476d', 's_seed_1', '(94) 99100-0001', 'superadmin', 1),
 ('usr_cliente', 'Mariana Silva Santos', 'cliente@shopcarajas.com.br', 'e6378e9f565ecfa74f4b23d9faaf2f122e1329bf927de0d65b7410eb8a61476d', 's_seed_1', '(94) 99200-0002', 'cliente', 1),
@@ -504,3 +505,5 @@ INSERT OR IGNORE INTO promotional_banners (id, title, subtitle, image_url, link_
 ('banner_1', 'Compre no Comércio de Canaã dos Carajás com Entrega Rápida', 'Materiais de construção, supermercado, eletrônicos e farmácia na sua porta.', 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1400&h=500&fit=crop&q=80', '/lojas', 'store', 1, 1),
 ('banner_2', 'Precisa de Ótica, Climatização, Eletricista ou Limpeza?', 'Conecte-se com os melhores profissionais e clínicas verificadas de Canaã.', 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1400&h=500&fit=crop&q=80', '/servicos', 'service', 2, 1),
 ('banner_3', 'Seja um Parceiro Shop da Cidade!', 'Cadastre sua loja ou ofereça seus serviços profissionais para milhares de moradores.', 'https://images.unsplash.com/photo-1556742049-0a67e557224f?w=1400&h=500&fit=crop&q=80', '/cadastro-parceiro', 'join', 3, 1);
+
+PRAGMA foreign_keys = ON;

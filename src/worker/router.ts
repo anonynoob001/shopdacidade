@@ -35,7 +35,7 @@ let dbReady = false;
 async function ensureDatabaseReady(db: DatabaseAdapter) {
   if (dbReady) return;
   try {
-    const table = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").first();
+    const table = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='promotional_banners'").first();
     if (!table) {
       console.log('[Shop da Cidade] Initializing D1 database schema and seeds...');
       await db.exec(INITIAL_SCHEMA_SQL);

@@ -1,5 +1,6 @@
 // Shop Carajás - Public Endpoints
 import { DatabaseAdapter } from '../db';
+import { INITIAL_SCHEMA_SQL } from '../schema_ddl';
 
 export async function handlePublicRoutes(req: { method: string; path: string; query?: any }, db: DatabaseAdapter) {
   const { method, path } = req;
@@ -133,6 +134,47 @@ export async function handlePublicRoutes(req: { method: string; path: string; qu
         data: {
           ok: false,
           error: err?.message || 'Falha ao consultar banco D1',
+          hint: 'Verifique se o vínculo DB está configurado nas Settings -> Functions do Cloudflare Pages.'
+        }
+      };
+    }
+  }
+
+  // GET & POST /api/public/setup-db (One-click Cloudflare D1 initialization)
+  if ((method === 'GET' || method === 'POST') && path === '/api/public/setup-db') {
+    try {
+      await db.exec(INITIAL_SCHEMA_SQL);
+      
+      const tablesRes = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name ASC").all();
+      const tableNames = (tablesRes.results as any[]).map(t => t.name);
+      
+      const sRes = await db.prepare('SELECT COUNT(*) as cnt FROM stores').first<{ cnt: number }>().catch(() => ({ cnt: 0 }));
+      const pRes = await db.prepare('SELECT COUNT(*) as cnt FROM products').first<{ cnt: number }>().catch(() => ({ cnt: 0 }));
+      const uRes = await db.prepare('SELECT COUNT(*) as cnt FROM users').first<{ cnt: number }>().catch(() => ({ cnt: 0 }));
+
+      return {
+        status: 200,
+        data: {
+          ok: true,
+          success: true,
+          message: 'Banco de dados D1 inicializado com sucesso!',
+          tables_created: tableNames.length,
+          tables: tableNames,
+          counts: {
+            stores: sRes?.cnt || 0,
+            products: pRes?.cnt || 0,
+            users: uRes?.cnt || 0
+          }
+        }
+      };
+    } catch (err: any) {
+      console.error('Setup DB error:', err);
+      return {
+        status: 500,
+        data: {
+          ok: false,
+          success: false,
+          error: err?.message || 'Falha ao inicializar banco D1',
           hint: 'Verifique se o vínculo DB está configurado nas Settings -> Functions do Cloudflare Pages.'
         }
       };

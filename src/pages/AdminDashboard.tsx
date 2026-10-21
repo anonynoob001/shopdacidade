@@ -17,6 +17,7 @@ import {
   FileSpreadsheet,
   Globe,
   Layers,
+  Lock,
   Package,
   Palette,
   Plus,
@@ -52,6 +53,12 @@ import {
   getSavedCloudflareConfig,
   saveCloudflareConfig
 } from '../services/cloudflare';
+import {
+  getSavedSupabaseConfig,
+  getSupabaseSchemaSQL,
+  saveSupabaseConfig,
+  testSupabaseConnection
+} from '../services/supabase';
 import { AuditLog, PromotionalBanner, ServiceProvider, Store as StoreType, User } from '../worker/types';
 
 interface AdminDashboardProps {
@@ -102,7 +109,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   const [bannersList, setBannersList] = useState<PromotionalBanner[]>([]);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [activeTab, setActiveTab] = useState<'kpis' | 'users' | 'stores' | 'providers' | 'settings' | 'cloudflare' | 'banners' | 'logs' | 'asaas'>('kpis');
+  const [activeTab, setActiveTab] = useState<'kpis' | 'users' | 'stores' | 'providers' | 'settings' | 'cloudflare' | 'supabase' | 'banners' | 'logs' | 'asaas'>('kpis');
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsSaveSuccess, setSettingsSaveSuccess] = useState(false);
@@ -142,6 +149,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   const [queryResult, setQueryResult] = useState<{ columns: string[]; rows: any[]; rowCount: number; latencyMs: number; error?: string } | null>(null);
   const [copiedSql, setCopiedSql] = useState(false);
   const [copiedCommands, setCopiedCommands] = useState(false);
+  const [isSettingUpD1, setIsSettingUpD1] = useState(false);
+
+  // Supabase Integration state
+  const savedSb = getSavedSupabaseConfig();
+  const [supabaseUrl, setSupabaseUrl] = useState(savedSb.url);
+  const [supabaseAnonKey, setSupabaseAnonKey] = useState(savedSb.anonKey);
+  const [isTestingSupabase, setIsTestingSupabase] = useState(false);
+  const [supabaseTestResult, setSupabaseTestResult] = useState<{ success: boolean; message: string; latencyMs?: number } | null>(null);
+  const [copiedSupabaseSql, setCopiedSupabaseSql] = useState(false);
 
   // Banner modal
   const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
@@ -149,6 +165,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   const [bannerSubtitle, setBannerSubtitle] = useState('');
   const [bannerImage, setBannerImage] = useState('');
   const [bannerLink, setBannerLink] = useState('/lojas');
+
+  // Admin password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordChangeStatus, setPasswordChangeStatus] = useState<{ success: boolean; message: string } | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setPasswordChangeStatus({ success: false, message: 'A nova senha e a confirmação não coincidem.' });
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordChangeStatus({ success: false, message: 'A nova senha deve ter no mínimo 6 caracteres.' });
+      return;
+    }
+    setIsChangingPassword(true);
+    setPasswordChangeStatus(null);
+    try {
+      const res = await apiRequest<{ success: boolean; message: string }>('/api/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+      });
+      setPasswordChangeStatus({ success: true, message: res.message || 'Senha alterada com sucesso!' });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setPasswordChangeStatus({ success: false, message: err?.message || 'Falha ao alterar senha. Verifique sua senha atual.' });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   const loadAdminData = async () => {
     setIsLoading(true);
@@ -371,6 +422,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     }
   };
 
+  const handleSetupD1 = async () => {
+    if (!confirm('Deseja inicializar todas as 25 tabelas e carregar os dados padrão (lojas, produtos, prestadores e configurações) no Cloudflare D1?')) return;
+    setIsSettingUpD1(true);
+    try {
+      const res = await apiRequest<{ message?: string }>('/api/public/setup-db', { method: 'POST' });
+      alert(res.message || 'Banco D1 inicializado com sucesso!');
+      await loadCloudflareStats();
+      await loadAdminData();
+    } catch (err: any) {
+      alert(err?.message || 'Falha ao inicializar banco D1.');
+    } finally {
+      setIsSettingUpD1(false);
+    }
+  };
+
+  const handleSaveSupabase = async () => {
+    saveSupabaseConfig(supabaseUrl.trim(), supabaseAnonKey.trim());
+    alert('Configurações do Supabase salvas com sucesso!');
+    handleTestSupabase();
+  };
+
+  const handleTestSupabase = async () => {
+    if (!supabaseUrl.trim() || !supabaseAnonKey.trim()) {
+      alert('Preencha a URL e a Anon Key do Supabase primeiro.');
+      return;
+    }
+    setIsTestingSupabase(true);
+    try {
+      const res = await testSupabaseConnection(supabaseUrl.trim(), supabaseAnonKey.trim());
+      setSupabaseTestResult(res);
+    } catch (err: any) {
+      setSupabaseTestResult({
+        success: false,
+        message: err?.message || 'Falha ao testar conexão com o Supabase'
+      });
+    } finally {
+      setIsTestingSupabase(false);
+    }
+  };
+
+  const handleCopySupabaseSQL = () => {
+    const sql = getSupabaseSchemaSQL();
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(sql);
+      setCopiedSupabaseSql(true);
+      setTimeout(() => setCopiedSupabaseSql(false), 2500);
+    }
+  };
+
   const handleExecuteQuery = async () => {
     if (!cfQuery.trim()) return;
     setIsExecutingQuery(true);
@@ -533,6 +633,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
         </button>
 
         <button
+          onClick={() => setActiveTab('supabase')}
+          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'supabase' ? 'border-emerald-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
+          }`}
+        >
+          <Database className="w-4 h-4 text-emerald-600" />
+          Banco Supabase (PostgreSQL & 2FA)
+        </button>
+
+        <button
           onClick={() => setActiveTab('asaas')}
           className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
             activeTab === 'asaas' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
@@ -619,7 +729,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
 
       {/* TAB: SETTINGS & VISUAL IDENTITY (Super Admin Main Site Customizer) */}
       {activeTab === 'settings' && (
-        <form onSubmit={handleSaveSettings} className="space-y-6 max-w-3xl text-xs animate-in fade-in duration-200">
+        <div className="space-y-6 max-w-3xl text-xs animate-in fade-in duration-200">
+          <form onSubmit={handleSaveSettings} className="space-y-6">
           {settingsSaveSuccess && (
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-emerald-600" />
@@ -868,6 +979,70 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             </div>
           </div>
 
+          {/* Section: Platform Security & Production Mode */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-emerald-600" />
+              <div>
+                <h3 className="text-base font-black text-slate-900 tracking-tight">Segurança da Plataforma & Modo Demonstração</h3>
+                <p className="text-xs text-slate-500">
+                  Controle se o atalho de alternar perfis sem senha fica disponível ou se a plataforma entra em modo 100% produção seguro.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-3">
+              <label className="block font-bold text-slate-800">Status do Modo de Demonstração (Troca rápida sem senha)</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSettings({ ...settings, demo_mode_enabled: '1' })}
+                  className={`p-3.5 rounded-2xl border text-left transition cursor-pointer flex flex-col gap-1 ${
+                    settings['demo_mode_enabled'] !== '0'
+                      ? 'border-amber-500 bg-amber-50 text-slate-900 ring-2 ring-amber-400'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="font-black text-xs text-amber-700 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    Ativado (Ambiente de Testes / Protótipo)
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    Barra superior de troca rápida visível para facilitar navegação entre telas.
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSettings({ ...settings, demo_mode_enabled: '0' })}
+                  className={`p-3.5 rounded-2xl border text-left transition cursor-pointer flex flex-col gap-1 ${
+                    settings['demo_mode_enabled'] === '0'
+                      ? 'border-emerald-600 bg-emerald-50 text-slate-900 ring-2 ring-emerald-500'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="font-black text-xs text-emerald-800 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                    Desativado (Modo Produção Seguro)
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    Oculta a barra de atalhos e bloqueia qualquer login sem senha na API.
+                  </span>
+                </button>
+              </div>
+
+              {settings['demo_mode_enabled'] === '0' ? (
+                <p className="text-[11px] text-emerald-700 font-semibold bg-emerald-100/60 p-2.5 rounded-xl border border-emerald-200">
+                  🔒 <strong>Modo Seguro Ativo:</strong> Todos os visitantes e clientes são obrigados a digitar e-mail e senha cadastrados para entrar na plataforma.
+                </p>
+              ) : (
+                <p className="text-[11px] text-amber-700 font-semibold bg-amber-100/60 p-2.5 rounded-xl border border-amber-200">
+                  ⚠️ <strong>Atenção:</strong> O Modo de Demonstração está ativo. Ao lançar para o público de Canaã dos Carajás, clique em <strong>Desativado (Modo Produção Seguro)</strong> e salve as alterações.
+                </p>
+              )}
+            </div>
+          </div>
+
           <button
             type="submit"
             disabled={isSavingSettings}
@@ -877,7 +1052,77 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             {isSavingSettings ? 'Salvando...' : 'Salvar Cores e Configurações do Site'}
           </button>
         </form>
-      )}
+
+        {/* Change Admin Password Card */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4 max-w-3xl mt-6">
+          <div className="flex items-center gap-2">
+            <Lock className="w-5 h-5 text-slate-700" />
+            <div>
+              <h3 className="text-base font-black text-slate-900 tracking-tight">Alterar Minha Senha de Administrador</h3>
+              <p className="text-xs text-slate-500">
+                Altere a senha da sua conta de Super Admin ({user?.email}) para garantir a segurança da plataforma.
+              </p>
+            </div>
+          </div>
+
+          {passwordChangeStatus && (
+            <div className={`p-4 rounded-2xl border text-xs font-bold flex items-center gap-2 ${
+              passwordChangeStatus.success
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}>
+              {passwordChangeStatus.success ? <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
+              <span>{passwordChangeStatus.message}</span>
+            </div>
+          )}
+
+          <form onSubmit={handlePasswordChange} className="space-y-3 text-xs max-w-md">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Senha Atual (Padrão inicial: 123456)</label>
+              <input
+                type="password"
+                required
+                value={currentPassword}
+                onChange={e => setCurrentPassword(e.target.value)}
+                placeholder="Digite sua senha atual"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Nova Senha (Mínimo 6 caracteres)</label>
+              <input
+                type="password"
+                required
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="Digite a nova senha segura"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Confirmar Nova Senha</label>
+              <input
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="Repita a nova senha"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isChangingPassword}
+              className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              {isChangingPassword ? 'Atualizando...' : 'Atualizar Minha Senha'}
+            </button>
+          </form>
+        </div>
+      </div>
+    )}
 
       {/* TAB: CLOUDFLARE D1 INTEGRATION */}
       {activeTab === 'cloudflare' && (
@@ -1058,6 +1303,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isLoadingCfStats ? 'animate-spin' : ''}`} />
                   <span>{isLoadingCfStats ? 'Verificando...' : 'Testar Conexão D1'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSetupD1}
+                  disabled={isSettingUpD1}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  <Database className={`w-3.5 h-3.5 ${isSettingUpD1 ? 'animate-spin' : ''}`} />
+                  <span>{isSettingUpD1 ? 'Criando tabelas no D1...' : 'Inicializar Tabelas & Lojas no D1'}</span>
                 </button>
               </div>
             </div>
@@ -1251,7 +1506,181 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
         </div>
       )}
 
-      {/* TAB: ASAAS PAYMENTS & COMMISSIONS */}
+      {/* TAB: SUPABASE INTEGRATION */}
+      {activeTab === 'supabase' && (
+        <div className="space-y-6 max-w-4xl text-xs animate-in fade-in duration-200">
+          {/* Main Status & Configuration Card */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+              <div>
+                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-black uppercase tracking-wider">
+                  Supabase • PostgreSQL Cloud Database & 2FA
+                </span>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2">
+                  <Database className="w-5 h-5 text-emerald-600" />
+                  Banco de Dados Supabase (PostgreSQL & 2FA)
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Conecte seu projeto do <strong>Supabase</strong> para ter um banco de dados relacional <strong>PostgreSQL</strong> completo com painel visual estilo planilha, suporte nativo a <strong>Autenticação com 2FA (Google Authenticator)</strong> e 1 GB de armazenamento grátis para fotos de produtos e lojas.
+                </p>
+              </div>
+
+              <div className="shrink-0 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-slate-900 text-center font-bold text-[11px] min-w-[150px]">
+                <Database className="w-5 h-5 mx-auto mb-1 text-emerald-600" />
+                <span className="block font-black text-slate-900">
+                  {supabaseUrl ? 'Supabase Configurado' : 'Pendente'}
+                </span>
+                <span className="text-[10px] text-slate-500">
+                  {supabaseTestResult?.success ? 'Conexão Ativa' : 'Aguardando Teste'}
+                </span>
+              </div>
+            </div>
+
+            {/* Live Status Feedback */}
+            {supabaseTestResult && (
+              <div
+                className={`p-4 rounded-2xl border text-xs font-bold flex items-center gap-3 ${
+                  supabaseTestResult.success
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                    : 'bg-rose-50 border-rose-200 text-rose-900'
+                }`}
+              >
+                {supabaseTestResult.success ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                )}
+                <div>
+                  <p>{supabaseTestResult.message}</p>
+                  {supabaseTestResult.latencyMs && (
+                    <span className="text-[10px] opacity-75 font-mono">
+                      Tempo de resposta: {supabaseTestResult.latencyMs}ms
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Inputs: URL and Anon Key */}
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Project URL do Supabase (VITE_SUPABASE_URL)
+                  </label>
+                  <input
+                    type="url"
+                    value={supabaseUrl}
+                    onChange={e => setSupabaseUrl(e.target.value)}
+                    placeholder="https://xyzproject.supabase.co"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-emerald-500"
+                  />
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Encontrado em: <strong>Project Settings &rarr; API &rarr; Project URL</strong>.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Anon Public Key (VITE_SUPABASE_ANON_KEY)
+                  </label>
+                  <input
+                    type="password"
+                    value={supabaseAnonKey}
+                    onChange={e => setSupabaseAnonKey(e.target.value)}
+                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-emerald-500"
+                  />
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Chave pública segura para acesso no navegador (chave <code>anon public</code>).
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleSaveSupabase}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-2 shadow-xs cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Salvar Credenciais do Supabase</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleTestSupabase}
+                  disabled={isTestingSupabase || !supabaseUrl.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isTestingSupabase ? 'animate-spin' : ''}`} />
+                  <span>{isTestingSupabase ? 'Testando Conexão...' : 'Testar Conexão com Supabase'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopySupabaseSQL}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-xs cursor-pointer ml-auto"
+                >
+                  {copiedSupabaseSql ? <Check className="w-3.5 h-3.5" /> : <FileCode className="w-3.5 h-3.5" />}
+                  <span>{copiedSupabaseSql ? 'SQL Copiado com Sucesso!' : 'Copiar Script SQL do Supabase'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Step by step guide card */}
+            <div className="pt-6 border-t border-slate-200 space-y-3">
+              <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                <Shield className="w-4 h-4 text-emerald-600" />
+                Guia Rápido: Como Configurar o Supabase e o 2FA (Authenticator)
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-700">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                  <span className="font-black text-slate-900 text-xs flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono text-[10px]">1</span>
+                    Criar o Projeto no Supabase
+                  </span>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    Acesse <strong>supabase.com</strong>, crie uma conta grátis e crie um novo projeto (ex: <code>shop-da-cidade</code>). Defina uma senha forte para o banco de dados.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                  <span className="font-black text-slate-900 text-xs flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono text-[10px]">2</span>
+                    Executar o Script SQL
+                  </span>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    Clique no botão <strong>"Copiar Script SQL do Supabase"</strong> acima. No painel do Supabase, clique no menu <strong>SQL Editor</strong> &rarr; <strong>New Query</strong>, cole o código e clique em <strong>Run</strong>. Todas as 15 tabelas, RLS e dados de Canaã serão criados!
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                  <span className="font-black text-slate-900 text-xs flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono text-[10px]">3</span>
+                    Copiar as Chaves de API
+                  </span>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    No Supabase, vá em <strong>Project Settings &rarr; API</strong>. Copie o <strong>Project URL</strong> e a chave <strong>anon public</strong> e cole nos campos acima.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 space-y-1.5">
+                  <span className="font-black text-emerald-950 text-xs flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-emerald-200 text-emerald-900 flex items-center justify-center font-mono text-[10px]">4</span>
+                    Ativar o 2FA (Authenticator App)
+                  </span>
+                  <p className="text-[11px] text-emerald-900 leading-relaxed">
+                    No painel do Supabase, vá em <strong>Authentication &rarr; Multi-Factor (MFA)</strong> e ative <strong>TOTP (Authenticator apps)</strong>. Os usuários poderão ativar o Google Authenticator ou Authy diretamente no perfil!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {activeTab === 'asaas' && (
         <div className="space-y-6 max-w-4xl text-xs animate-in fade-in duration-200">
           {/* Main Status & Configuration Card */}

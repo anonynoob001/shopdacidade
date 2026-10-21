@@ -162,6 +162,17 @@ export async function handleAuthRoutes(req: { method: string; path: string; body
 
   // POST /api/auth/quick-switch (Demo switcher for seamless test experience)
   if (method === 'POST' && path === '/api/auth/quick-switch') {
+    // Check if demo mode is disabled in settings
+    try {
+      const demoSetting = await db.prepare("SELECT value FROM site_settings WHERE key = 'demo_mode_enabled'").first<any>();
+      if (demoSetting && String(demoSetting.value) === '0') {
+        return {
+          status: 403,
+          data: { error: 'O Modo de Demonstração foi desativado para segurança em produção. Acesse com seu e-mail e senha cadastrados.' }
+        };
+      }
+    } catch (_) {}
+
     const { role } = body || {};
     const validRoles = ['superadmin', 'admin', 'lojista', 'prestador', 'entregador', 'cliente'];
     if (!validRoles.includes(role)) {
@@ -186,6 +197,39 @@ export async function handleAuthRoutes(req: { method: string; path: string; body
     };
 
     return { status: 200, data: { success: true, token, user } };
+  }
+
+  // POST /api/auth/change-password
+  if (method === 'POST' && path === '/api/auth/change-password') {
+    if (!req.user) {
+      return { status: 401, data: { error: 'Autenticação necessária.' } };
+    }
+    const { current_password, new_password } = body || {};
+    if (!current_password || !new_password) {
+      return { status: 400, data: { error: 'Senha atual e nova senha são obrigatórias.' } };
+    }
+    if (String(new_password).length < 6) {
+      return { status: 400, data: { error: 'A nova senha deve ter no mínimo 6 caracteres.' } };
+    }
+
+    const userRecord = await db.prepare('SELECT * FROM users WHERE id = ?').bind(req.user.id).first<any>();
+    if (!userRecord) {
+      return { status: 404, data: { error: 'Usuário não encontrado.' } };
+    }
+
+    const isValid = await verifyPassword(current_password, userRecord.salt, userRecord.password_hash);
+    if (!isValid) {
+      return { status: 401, data: { error: 'Senha atual incorreta.' } };
+    }
+
+    const newSalt = generateSalt();
+    const newHash = await hashPassword(new_password, newSalt);
+    const now = new Date().toISOString();
+
+    await db.prepare('UPDATE users SET password_hash = ?, salt = ?, updated_at = ? WHERE id = ?')
+      .bind(newHash, newSalt, now, req.user.id).run();
+
+    return { status: 200, data: { success: true, message: 'Senha atualizada com sucesso!' } };
   }
 
   // GET /api/auth/me

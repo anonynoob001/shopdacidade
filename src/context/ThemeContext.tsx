@@ -14,6 +14,7 @@ export interface SiteSettings {
   official_email: string;
   banner_notice: string;
   banner_notice_active?: string;
+  demo_mode_enabled?: string; // '1' = enabled (for testing/dev), '0' = disabled (production)
   pix_key?: string;
   pix_beneficiary?: string;
   default_commission_rate?: string;
@@ -36,7 +37,8 @@ const DEFAULT_SETTINGS: SiteSettings = {
   official_whatsapp: '(94) 99123-4567',
   official_email: 'atendimento@shopdacidade.com.br',
   banner_notice: 'Bem-vindo ao Shop da Cidade! Conectando você às melhores lojas e prestadores de Canaã dos Carajás - PA.',
-  banner_notice_active: '1'
+  banner_notice_active: '1',
+  demo_mode_enabled: '1'
 };
 
 interface ThemeContextType {
