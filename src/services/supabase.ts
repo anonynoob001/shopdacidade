@@ -2,6 +2,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Default Supabase configuration from environment or localStorage
+export const DEFAULT_SUPABASE_URL = 'https://nesxtynctajtebktxmdj.supabase.co';
+export const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_ESirto0tEwgv_Igh0PrCpw_g2lyMAeE';
+
 const STORAGE_KEY_URL = 'shop_cidade_supabase_url';
 const STORAGE_KEY_KEY = 'shop_cidade_supabase_anon_key';
 
@@ -15,8 +18,8 @@ export function getSavedSupabaseConfig(): { url: string; anonKey: string } {
   const storedKey = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_KEY) || '' : '';
 
   return {
-    url: storedUrl || envUrl,
-    anonKey: storedKey || envKey
+    url: storedUrl || envUrl || DEFAULT_SUPABASE_URL,
+    anonKey: storedKey || envKey || DEFAULT_SUPABASE_ANON_KEY
   };
 }
 
