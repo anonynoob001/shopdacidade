@@ -35,6 +35,22 @@ export async function runSchemaMigration(db: any): Promise<{ success: boolean; t
   try { await db.prepare('ALTER TABLE users ADD COLUMN two_factor_secret TEXT;').run(); } catch (_) {}
   try { await db.prepare('ALTER TABLE users ADD COLUMN two_factor_backup_codes TEXT;').run(); } catch (_) {}
 
+  // Ensure superadmin accounts are seeded with verified PBKDF2 hash (password: 123456)
+  const superHash = '78552bef20048edb3a63905a4adfa1908f7c3ccc4b6fe4af83a87d2a8849e751';
+  try {
+    await db.prepare(`
+      INSERT OR REPLACE INTO users (id, name, email, password_hash, salt, phone, role, is_active)
+      VALUES ('usr_superadmin', 'Administrador Shop da Cidade', 'admin@shopcarajas.com.br', ?, 's_seed_1', '(94) 99100-0001', 'superadmin', 1)
+    `).bind(superHash).run();
+  } catch (_) {}
+
+  try {
+    await db.prepare(`
+      INSERT OR REPLACE INTO users (id, name, email, password_hash, salt, phone, role, is_active)
+      VALUES ('usr_superadmin_cidade', 'Administrador Shop da Cidade', 'admin@shopdacidade.com.br', ?, 's_seed_1', '(94) 99100-0001', 'superadmin', 1)
+    `).bind(superHash).run();
+  } catch (_) {}
+
   return { success: true, totalExecuted };
 }
 

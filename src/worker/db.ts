@@ -364,12 +364,30 @@ class InMemoryDatabaseAdapter implements DatabaseAdapter {
     // 9. Users
     this.tables.set('users', [
       {
-        id: 'usr_admin',
-        name: 'Super Administrador',
-        email: 'admin@shopdacidade.com.br',
-        password_hash: 'admin',
-        salt: 'salt',
+        id: 'usr_admin_1',
+        name: 'Administrador Shop da Cidade',
+        email: 'admin@shopcarajas.com.br',
+        password_hash: '78552bef20048edb3a63905a4adfa1908f7c3ccc4b6fe4af83a87d2a8849e751',
+        salt: 's_seed_1',
         role: 'superadmin',
+        is_active: 1
+      },
+      {
+        id: 'usr_admin_2',
+        name: 'Administrador Shop da Cidade',
+        email: 'admin@shopdacidade.com.br',
+        password_hash: '78552bef20048edb3a63905a4adfa1908f7c3ccc4b6fe4af83a87d2a8849e751',
+        salt: 's_seed_1',
+        role: 'superadmin',
+        is_active: 1
+      },
+      {
+        id: 'usr_lojista_demo',
+        name: 'João Pedro da Silva',
+        email: 'lojista@shopcarajas.com.br',
+        password_hash: '78552bef20048edb3a63905a4adfa1908f7c3ccc4b6fe4af83a87d2a8849e751',
+        salt: 's_seed_1',
+        role: 'lojista',
         is_active: 1
       }
     ]);
