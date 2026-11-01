@@ -400,6 +400,21 @@ class InMemoryPreparedStatement implements PreparedStatement {
   }
 
   private getTargetTable(): string {
+    // Explicit primary table matching to avoid nested subquery false positives
+    if (/\bFROM\s+stores\b/i.test(this.query) || /\b(?:INTO|UPDATE)\s+stores\b/i.test(this.query)) return 'stores';
+    if (/\bFROM\s+products\b/i.test(this.query) || /\b(?:INTO|UPDATE)\s+products\b/i.test(this.query)) return 'products';
+    if (/\bFROM\s+service_providers\b/i.test(this.query) || /\b(?:INTO|UPDATE)\s+service_providers\b/i.test(this.query)) return 'service_providers';
+    if (/\bFROM\s+promotional_banners\b/i.test(this.query) || /\b(?:INTO|UPDATE)\s+promotional_banners\b/i.test(this.query)) return 'promotional_banners';
+    if (/\bFROM\s+platform_settings\b/i.test(this.query) || /\b(?:INTO|UPDATE)\s+platform_settings\b/i.test(this.query)) return 'platform_settings';
+    if (/\bFROM\s+subscription_plans\b/i.test(this.query) || /\b(?:INTO|UPDATE)\s+subscription_plans\b/i.test(this.query)) return 'subscription_plans';
+    if (/\bFROM\s+sessions\b/i.test(this.query) || /\b(?:INTO|UPDATE)\s+sessions\b/i.test(this.query)) return 'sessions';
+    if (/\bFROM\s+users\b/i.test(this.query) || /\b(?:INTO|UPDATE)\s+users\b/i.test(this.query)) return 'users';
+    if (/\bFROM\s+couriers\b/i.test(this.query) || /\b(?:INTO|UPDATE)\s+couriers\b/i.test(this.query)) return 'couriers';
+    if (/\bFROM\s+orders\b/i.test(this.query) || /\b(?:INTO|UPDATE)\s+orders\b/i.test(this.query)) return 'orders';
+    if (/\bFROM\s+local_ads\b/i.test(this.query) || /\b(?:INTO|UPDATE)\s+local_ads\b/i.test(this.query)) return 'local_ads';
+    if (/\bFROM\s+product_categories\b/i.test(this.query)) return 'product_categories';
+    if (/\bFROM\s+service_categories\b/i.test(this.query)) return 'service_categories';
+
     const match = this.query.match(/(?:FROM|INTO|UPDATE)\s+([a-zA-Z0-9_]+)/i);
     return match ? match[1].toLowerCase() : '';
   }
@@ -411,11 +426,45 @@ class InMemoryPreparedStatement implements PreparedStatement {
   }
 
   async first<T = any>(_colName?: string): Promise<T | null> {
+    const tbl = this.getTargetTable();
+    if (tbl === 'sessions' && this.params.length > 0) {
+      const token = this.params[0];
+      const sessions = this.tables.get('sessions') || [];
+      const sess = sessions.find((s: any) => s.token === token);
+      if (!sess) return null;
+      const users = this.tables.get('users') || [];
+      const usr = users.find((u: any) => u.id === sess.user_id) || users[0];
+      return { ...usr, user_id: sess.user_id, token: sess.token } as T;
+    }
     const res = await this.all<T>();
     return res.results.length > 0 ? res.results[0] : null;
   }
 
   async run(): Promise<{ success: boolean; meta: any }> {
+    const tbl = this.getTargetTable();
+
+    // Persist settings in memory so color changes and name changes persist
+    if (tbl === 'platform_settings' && this.params.length >= 2) {
+      const key = this.params[0];
+      const value = String(this.params[1]);
+      const list = this.tables.get('platform_settings') || [];
+      const idx = list.findIndex((row: any) => row.key === key);
+      if (idx !== -1) {
+        list[idx].value = value;
+      } else {
+        list.push({ key, value });
+      }
+      this.tables.set('platform_settings', list);
+    }
+
+    // Persist sessions in memory
+    if (tbl === 'sessions' && this.params.length >= 4) {
+      const [sessionId, userId, token, expiresAt] = this.params;
+      const list = this.tables.get('sessions') || [];
+      list.push({ id: sessionId, user_id: userId, token, expires_at: expiresAt });
+      this.tables.set('sessions', list);
+    }
+
     return { success: true, meta: { changes: 1 } };
   }
 }

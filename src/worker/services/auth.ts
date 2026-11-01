@@ -65,28 +65,33 @@ export async function createSession(db: DatabaseAdapter, userId: string, daysVal
 export async function getUserByToken(db: DatabaseAdapter, token?: string): Promise<User | null> {
   if (!token) return null;
 
-  const session = await db.prepare(`
-    SELECT s.user_id, s.expires_at, u.*
-    FROM sessions s
-    JOIN users u ON u.id = s.user_id
-    WHERE s.token = ? AND s.expires_at > CURRENT_TIMESTAMP AND u.is_active = 1
-  `).bind(token).first<any>();
+  try {
+    const session = await db.prepare(`
+      SELECT s.user_id, s.expires_at, u.*
+      FROM sessions s
+      JOIN users u ON u.id = s.user_id
+      WHERE s.token = ? AND s.expires_at > CURRENT_TIMESTAMP AND u.is_active = 1
+    `).bind(token).first<any>();
 
-  if (!session) return null;
+    if (!session) return null;
 
-  const user: User = {
-    id: session.id,
-    name: session.name,
-    email: session.email,
-    phone: session.phone,
-    role: session.role as UserRole,
-    is_active: session.is_active,
-    two_factor_enabled: session.two_factor_enabled,
-    created_at: session.created_at,
-    updated_at: session.updated_at
-  };
+    const user: User = {
+      id: session.id,
+      name: session.name,
+      email: session.email,
+      phone: session.phone,
+      role: session.role as UserRole,
+      is_active: session.is_active,
+      two_factor_enabled: session.two_factor_enabled,
+      created_at: session.created_at,
+      updated_at: session.updated_at
+    };
 
-  return user;
+    return user;
+  } catch (err) {
+    console.warn('[Shop da Cidade] getUserByToken error (invalid token or uninitialized DB):', err);
+    return null;
+  }
 }
 
 export async function deleteSession(db: DatabaseAdapter, token: string): Promise<void> {

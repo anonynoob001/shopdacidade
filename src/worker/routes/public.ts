@@ -220,6 +220,22 @@ export async function handlePublicRoutes(req: { method: string; path: string; qu
 
   // GET /api/public/settings
   if (method === 'GET' && path === '/api/public/settings') {
+    const defaultSettings: Record<string, string> = {
+      platform_name: 'Shop da Cidade',
+      site_tagline: 'O Shopping Virtual da Sua Cidade',
+      city_name: 'Canaã dos Carajás',
+      city_state: 'PA',
+      primary_color: '#fdca04',
+      secondary_color: '#0f172a',
+      accent_color: '#f59e0b',
+      official_whatsapp: '(94) 99123-4567',
+      official_email: 'atendimento@shopdacidade.com.br',
+      banner_notice: 'Bem-vindo ao Shop da Cidade em Canaã dos Carajás!',
+      banner_notice_active: '1',
+      default_commission_rate: '8.0',
+      demo_mode_enabled: '0'
+    };
+
     try {
       const { results } = await db.prepare('SELECT key, value FROM platform_settings').all();
       const PUBLIC_ALLOWED = new Set([
@@ -247,14 +263,14 @@ export async function handlePublicRoutes(req: { method: string; path: string; qu
         'maintenance_mode'
       ]);
       const settingsObj: Record<string, string> = {};
-      for (const row of (results as any[])) {
+      for (const row of ((results as any[]) || [])) {
         if (PUBLIC_ALLOWED.has(row.key)) {
           settingsObj[row.key] = row.value;
         }
       }
-      return { status: 200, data: { settings: settingsObj } };
+      return { status: 200, data: { settings: { ...defaultSettings, ...settingsObj } } };
     } catch {
-      return { status: 200, data: { settings: {} } };
+      return { status: 200, data: { settings: defaultSettings } };
     }
   }
 

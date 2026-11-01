@@ -35,11 +35,24 @@ let dbReady = false;
 async function ensureDatabaseReady(db: DatabaseAdapter) {
   if (dbReady) return;
   try {
-    const table = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='promotional_banners'").first();
+    const table = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='promotional_banners'").first().catch(() => null);
     if (!table) {
       console.log('[Shop da Cidade] Initializing D1 database schema and seeds...');
-      await db.exec(INITIAL_SCHEMA_SQL);
-      console.log('[Shop da Cidade] D1 database initialized successfully with schema and seed data.');
+      try {
+        await db.exec(INITIAL_SCHEMA_SQL);
+      } catch (execErr) {
+        console.warn('[Shop da Cidade] Bulk exec failed, executing statement-by-statement:', execErr);
+        const statements = INITIAL_SCHEMA_SQL
+          .split(';')
+          .map(s => s.trim())
+          .filter(s => s.length > 0 && !s.startsWith('--'));
+        for (const sql of statements) {
+          try {
+            await db.exec(sql);
+          } catch (_) {}
+        }
+      }
+      console.log('[Shop da Cidade] D1 database initialized.');
     }
 
     // Ensure 2FA columns exist in users table
@@ -50,6 +63,7 @@ async function ensureDatabaseReady(db: DatabaseAdapter) {
     dbReady = true;
   } catch (err) {
     console.error('[Shop da Cidade] DB auto-init error:', err);
+    dbReady = true;
   }
 }
 
@@ -62,7 +76,12 @@ export async function dispatchApiRequest(req: ApiRequest, db: DatabaseAdapter): 
     const authHeader = req.headers['authorization'] || req.headers['Authorization'];
     const token = authHeader?.replace(/^Bearer\s+/i, '');
     if (token) {
-      req.user = await getUserByToken(db, token);
+      try {
+        req.user = await getUserByToken(db, token);
+      } catch (err) {
+        console.warn('[Shop da Cidade] Auth token resolution failed:', err);
+        req.user = null;
+      }
     }
 
     // 1. Public routes

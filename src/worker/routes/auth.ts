@@ -414,30 +414,40 @@ export async function handleAuthRoutes(req: { method: string; path: string; body
 
   // GET /api/auth/me
   if (method === 'GET' && path === '/api/auth/me') {
-    const authHeader = headers['authorization'] || headers['Authorization'];
-    const token = authHeader?.replace(/^Bearer\s+/i, '');
-    const user = await getUserByToken(db, token);
+    try {
+      const authHeader = headers['authorization'] || headers['Authorization'];
+      const token = authHeader?.replace(/^Bearer\s+/i, '');
+      const user = await getUserByToken(db, token);
 
-    if (!user) {
-      return { status: 200, data: { user: null } };
-    }
+      if (!user) {
+        return { status: 200, data: { user: null } };
+      }
 
-    // Check if user has an associated store or provider profile
-    let store = null;
-    let provider = null;
-    let courier = null;
+      // Check if user has an associated store or provider profile
+      let store = null;
+      let provider = null;
+      let courier = null;
 
-    if (user.role === 'lojista' || user.role === 'superadmin' || user.role === 'admin') {
-      store = await db.prepare('SELECT * FROM stores WHERE user_id = ?').bind(user.id).first();
-    }
-    if (user.role === 'prestador' || user.role === 'superadmin' || user.role === 'admin') {
-      provider = await db.prepare('SELECT * FROM service_providers WHERE user_id = ?').bind(user.id).first();
-    }
-    if (user.role === 'entregador' || user.role === 'superadmin' || user.role === 'admin') {
-      courier = await db.prepare('SELECT * FROM couriers WHERE user_id = ?').bind(user.id).first();
-    }
+      try {
+        if (user.role === 'lojista' || user.role === 'superadmin' || user.role === 'admin') {
+          store = await db.prepare('SELECT * FROM stores WHERE user_id = ?').bind(user.id).first();
+        }
+      } catch (_) {}
+      try {
+        if (user.role === 'prestador' || user.role === 'superadmin' || user.role === 'admin') {
+          provider = await db.prepare('SELECT * FROM service_providers WHERE user_id = ?').bind(user.id).first();
+        }
+      } catch (_) {}
+      try {
+        if (user.role === 'entregador' || user.role === 'superadmin' || user.role === 'admin') {
+          courier = await db.prepare('SELECT * FROM couriers WHERE user_id = ?').bind(user.id).first();
+        }
+      } catch (_) {}
 
-    return { status: 200, data: { user, store, provider, courier } };
+      return { status: 200, data: { user, store, provider, courier } };
+    } catch {
+      return { status: 200, data: { user: null, store: null, provider: null, courier: null } };
+    }
   }
 
   // POST /api/auth/logout

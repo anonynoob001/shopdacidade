@@ -9,25 +9,37 @@
 /* Dynamic theme overrides to synchronize colors with Super Admin customizer */
 .theme-primary-bg,
 .bg-amber-400,
-.bg-amber-500 {
+.bg-amber-500,
+.bg-amber-600 {
   background-color: var(--color-theme-primary) !important;
 }
 
 .theme-primary-text,
+.text-amber-300,
 .text-amber-400,
-.text-amber-500 {
+.text-amber-500,
+.text-amber-600 {
   color: var(--color-theme-primary) !important;
 }
 
 .theme-primary-border,
 .border-amber-400,
-.border-amber-500 {
+.border-amber-500,
+.border-amber-600 {
   border-color: var(--color-theme-primary) !important;
 }
 
+.hover\:bg-amber-400:hover,
 .hover\:bg-amber-500:hover,
-.hover\:bg-amber-600:hover {
+.hover\:bg-amber-600:hover,
+.hover\:bg-amber-700:hover {
   background-color: var(--color-theme-accent, var(--color-theme-primary)) !important;
+}
+
+.hover\:text-amber-300:hover,
+.hover\:text-amber-400:hover,
+.hover\:text-amber-500:hover {
+  color: var(--color-theme-accent, var(--color-theme-primary)) !important;
 }
 
 .theme-secondary-bg,
@@ -36,7 +48,7 @@
 }
 
 .bg-slate-950 {
-  background-color: color-mix(in srgb, var(--color-theme-secondary) 85%, black 15%) !important;
+  background-color: color-mix(in srgb, var(--color-theme-secondary) 80%, black 20%) !important;
 }
 
 .border-slate-800 {
