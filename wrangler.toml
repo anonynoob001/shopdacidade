@@ -15,3 +15,6 @@ APP_URL = "https://shopdacidade.com.br"
 CITY_NAME = "Canaã dos Carajás"
 CITY_STATE = "PA"
 DEFAULT_TIMEZONE = "America/Belem"
+VITE_SUPABASE_URL = "https://nesxtynctajtebktxmdj.supabase.co"
+VITE_SUPABASE_ANON_KEY = "sb_publishable_ESirto0tEwgv_Igh0PrCpw_g2lyMAeE"
+
