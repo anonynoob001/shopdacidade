@@ -115,11 +115,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   Painel de Entregadores
                 </button>
               </li>
-              <li>
-                <button onClick={() => onNavigate('admin')} className="text-slate-400 hover:text-white transition cursor-pointer">
-                  Área Administrativa
-                </button>
-              </li>
             </ul>
           </div>
         </div>

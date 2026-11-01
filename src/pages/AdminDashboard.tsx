@@ -13,12 +13,14 @@ import {
   Edit2,
   ExternalLink,
   Eye,
+  EyeOff,
   FileCode,
   FileSpreadsheet,
   Globe,
   KeyRound,
   Layers,
   Lock,
+  Mail,
   Package,
   Palette,
   Plus,
@@ -28,6 +30,7 @@ import {
   Search,
   Server,
   Shield,
+  ShieldAlert,
   ShieldCheck,
   ShoppingBag,
   Sliders,
@@ -85,8 +88,18 @@ const THEME_PRESETS = [
 ];
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
-  const { user } = useAuth();
+  const { user, login, login2FA, logout } = useAuth();
   const { updateSettingsState, refreshSettings: refreshGlobalTheme } = useSiteTheme();
+
+  // Admin Security & 2FA Gate State
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [adminRequires2FA, setAdminRequires2FA] = useState(false);
+  const [adminTemp2FAToken, setAdminTemp2FAToken] = useState<string | null>(null);
+  const [admin2FACode, setAdmin2FACode] = useState('');
+  const [adminLoginError, setAdminLoginError] = useState<string | null>(null);
+  const [isAdminLoggingIn, setIsAdminLoggingIn] = useState(false);
 
   const [metrics, setMetrics] = useState<any>(null);
   const [usersList, setUsersList] = useState<User[]>([]);
@@ -373,9 +386,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     }
   };
 
+  const handleAdminLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminLoginError(null);
+    setIsAdminLoggingIn(true);
+    try {
+      const result = await login(adminEmail.trim(), adminPassword);
+      if (result && 'twoFactorRequired' in result && result.twoFactorRequired && result.tempToken) {
+        setAdminRequires2FA(true);
+        setAdminTemp2FAToken(result.tempToken);
+      } else {
+        // Logged in successfully, load admin data
+        await loadAdminData();
+      }
+    } catch (err: any) {
+      setAdminLoginError(err?.message || 'E-mail ou senha de administrador inválidos.');
+    } finally {
+      setIsAdminLoggingIn(false);
+    }
+  };
+
+  const handleAdmin2FASubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminTemp2FAToken || !admin2FACode.trim()) return;
+    setAdminLoginError(null);
+    setIsAdminLoggingIn(true);
+    try {
+      await login2FA(adminTemp2FAToken, admin2FACode.trim());
+      await loadAdminData();
+    } catch (err: any) {
+      setAdminLoginError(err?.message || 'Código de 2FA incorreto ou expirado. Tente novamente.');
+    } finally {
+      setIsAdminLoggingIn(false);
+    }
+  };
+
   useEffect(() => {
-    loadAdminData();
-  }, []);
+    if (user && (user.role === 'admin' || user.role === 'superadmin')) {
+      loadAdminData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user]);
 
   const handleUpdateUser = async (userId: string, role: string, is_active: number) => {
     try {
@@ -474,7 +526,214 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     return (
       <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
         <div className="w-10 h-10 border-3 border-amber-500 border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs font-semibold text-slate-500">Carregando Painel Central de Controle...</span>
+        <span className="text-xs font-semibold text-slate-500">Verificando Credenciais do Administrador...</span>
+      </div>
+    );
+  }
+
+  // 1. Guard: User is logged in, but lacks administrative privileges
+  if (user && user.role !== 'admin' && user.role !== 'superadmin') {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl text-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto shadow-inner">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+
+          <div>
+            <span className="px-3 py-1 rounded-full bg-rose-500/10 text-rose-400 text-xs font-black uppercase tracking-wider">
+              Acesso Negado
+            </span>
+            <h2 className="text-xl font-black text-white mt-3">Permissão Insuficiente</h2>
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+              Você está conectado como <strong className="text-white">{user.name}</strong> ({user.email}), nível <span className="text-amber-400 font-bold uppercase">{user.role}</span>.
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Esta rota é estritamente confidencial e reservada a Administradores do Shop da Cidade.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col gap-3">
+            <button
+              onClick={async () => {
+                await logout();
+              }}
+              className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition cursor-pointer shadow-md"
+            >
+              Sair e Entrar como Administrador
+            </button>
+
+            <button
+              onClick={() => onNavigate('home')}
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition cursor-pointer"
+            >
+              Voltar para a Página Inicial
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Guard: No user is logged in — display high-security Administrative Login & 2FA Gate
+  if (!user) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6 text-white">
+          {/* Logo & Security Badge */}
+          <div className="text-center space-y-3">
+            <img
+              src="/shop-da-cidade-logo-transparente.png"
+              alt="Shop da Cidade"
+              className="h-12 w-auto max-w-[210px] mx-auto object-contain drop-shadow"
+            />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-black uppercase tracking-wider">
+              <Lock className="w-3.5 h-3.5" />
+              Acesso Administrativo Restrito
+            </div>
+            <h2 className="text-lg font-black text-white">
+              {adminRequires2FA ? 'Verificação em Duas Etapas (2FA)' : 'Identificação do Administrador'}
+            </h2>
+            <p className="text-xs text-slate-400">
+              {adminRequires2FA
+                ? 'Digite o código de 6 dígitos gerado no Google Authenticator ou código de backup.'
+                : 'Insira suas credenciais corporativas autorizadas para entrar no painel central.'}
+            </p>
+          </div>
+
+          {/* Error Alert */}
+          {adminLoginError && (
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{adminLoginError}</span>
+            </div>
+          )}
+
+          {/* Step 1: Email + Password */}
+          {!adminRequires2FA ? (
+            <form onSubmit={handleAdminLoginSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-amber-400" />
+                  E-mail do Administrador
+                </label>
+                <input
+                  type="email"
+                  required
+                  autoFocus
+                  value={adminEmail}
+                  onChange={e => setAdminEmail(e.target.value)}
+                  placeholder="admin@shopcarajas.com.br"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                  Senha de Acesso
+                </label>
+                <div className="relative">
+                  <input
+                    type={showAdminPassword ? 'text' : 'password'}
+                    required
+                    value={adminPassword}
+                    onChange={e => setAdminPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-slate-800/80 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminPassword(!showAdminPassword)}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isAdminLoggingIn}
+                className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition cursor-pointer shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isAdminLoggingIn ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    <span>Verificando Acesso...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Autenticar no Painel</span>
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            /* Step 2: 2FA TOTP Code */
+            <form onSubmit={handleAdmin2FASubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
+                  Código de Autenticação 2FA (TOTP)
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  maxLength={10}
+                  value={admin2FACode}
+                  onChange={e => setAdmin2FACode(e.target.value.replace(/[^a-zA-Z0-9-]/g, ''))}
+                  placeholder="000 000"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-800/80 border border-slate-700 text-center text-xl font-mono tracking-widest text-emerald-400 placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isAdminLoggingIn || !admin2FACode.trim()}
+                className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition cursor-pointer shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isAdminLoggingIn ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    <span>Validando 2FA...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Validar 2FA & Acessar Painel</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAdminRequires2FA(false);
+                  setAdminTemp2FAToken(null);
+                  setAdmin2FACode('');
+                  setAdminLoginError(null);
+                }}
+                className="w-full text-center text-xs text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                ← Voltar para E-mail e Senha
+              </button>
+            </form>
+          )}
+
+          {/* Back to store */}
+          <div className="pt-2 border-t border-slate-800/80 text-center">
+            <button
+              type="button"
+              onClick={() => onNavigate('home')}
+              className="text-xs text-slate-400 hover:text-white inline-flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Voltar para o Shop da Cidade
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -511,6 +770,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
             <span>Exportar CSV</span>
           </a>
+          <button
+            onClick={async () => {
+              await logout();
+              onNavigate('home');
+            }}
+            className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+            title="Encerrar sessão e deslogar do painel"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>Sair do Painel</span>
+          </button>
         </div>
       </div>
 

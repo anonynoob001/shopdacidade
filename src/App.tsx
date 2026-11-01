@@ -54,8 +54,17 @@ function parseLocationToRoute(): { view: string; param?: string } {
     return { view: 'provider-detail', param: providerMatch[1] };
   }
 
-  // 5. Standard views
-  if (pathname.includes('/admin')) return { view: 'admin' };
+  // 5. Hidden Admin / Painel route
+  if (
+    pathname.includes('/painel') ||
+    pathname.includes('/admin') ||
+    hash.includes('painel') ||
+    hash.includes('admin') ||
+    searchParams.has('painel') ||
+    searchParams.has('admin')
+  ) {
+    return { view: 'admin' };
+  }
   if (pathname.includes('/merchant') || pathname.includes('/lojista')) return { view: 'merchant' };
   if (pathname.includes('/prestador') || pathname.includes('/provider')) return { view: 'provider' };
   if (pathname.includes('/entregador') || pathname.includes('/courier')) return { view: 'courier' };
@@ -128,7 +137,7 @@ function ShopCidadeApp() {
     } else if (view === 'courier') {
       newPath = '/entregador';
     } else if (view === 'admin') {
-      newPath = '/admin';
+      newPath = '/painel';
     } else if (view === 'partner-register') {
       newPath = '/parceiro';
     }
