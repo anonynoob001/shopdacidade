@@ -1,6 +1,6 @@
 // Shop Carajás - Public Endpoints
 import { DatabaseAdapter } from '../db';
-import { INITIAL_SCHEMA_SQL } from '../schema_ddl';
+import { INITIAL_SCHEMA_SQL, runSchemaMigration } from '../schema_ddl';
 
 export async function handlePublicRoutes(req: { method: string; path: string; query?: any }, db: DatabaseAdapter) {
   const { method, path } = req;
@@ -170,7 +170,7 @@ export async function handlePublicRoutes(req: { method: string; path: string; qu
   // GET & POST /api/public/setup-db (One-click Cloudflare D1 initialization)
   if ((method === 'GET' || method === 'POST') && path === '/api/public/setup-db') {
     try {
-      await db.exec(INITIAL_SCHEMA_SQL);
+      await runSchemaMigration(db);
       
       const tablesRes = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name ASC").all();
       const tableNames = (tablesRes.results as any[]).map(t => t.name);

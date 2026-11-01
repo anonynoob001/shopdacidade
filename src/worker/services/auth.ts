@@ -71,7 +71,7 @@ export async function getUserByToken(db: DatabaseAdapter, token?: string): Promi
       FROM sessions s
       JOIN users u ON u.id = s.user_id
       WHERE s.token = ? AND s.expires_at > CURRENT_TIMESTAMP AND u.is_active = 1
-    `).bind(token).first<any>();
+    `).bind(token).first<any>().catch(() => null);
 
     if (!session) return null;
 

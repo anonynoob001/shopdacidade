@@ -30,40 +30,67 @@ export interface ApiResponse {
   data: any;
 }
 
+export function splitSqlStatements(sqlScript: string): string[] {
+  // Strip block comments /* ... */
+  const noBlock = sqlScript.replace(/\/\*[\s\S]*?\*\//g, '');
+  // Strip single-line comments -- ...
+  const noLine = noBlock.replace(/--[^\r\n]*/g, '');
+  return noLine
+    .split(';')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+}
+
+export async function runSchemaMigration(db: DatabaseAdapter): Promise<{ success: boolean; totalExecuted: number }> {
+  const statements = splitSqlStatements(INITIAL_SCHEMA_SQL);
+  let totalExecuted = 0;
+
+  for (const sql of statements) {
+    try {
+      await db.prepare(sql).run();
+      totalExecuted++;
+    } catch {
+      try {
+        await db.exec(sql);
+        totalExecuted++;
+      } catch (err: any) {
+        // Many statements use IF NOT EXISTS or INSERT OR IGNORE, ignore normal duplicates
+        console.warn('[Shop da Cidade] Notice during SQL migration:', sql.slice(0, 50), err?.message);
+      }
+    }
+  }
+
+  // Ensure 2FA columns exist in users table
+  try { await db.prepare('ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER DEFAULT 0;').run(); } catch (_) {}
+  try { await db.prepare('ALTER TABLE users ADD COLUMN two_factor_secret TEXT;').run(); } catch (_) {}
+  try { await db.prepare('ALTER TABLE users ADD COLUMN two_factor_backup_codes TEXT;').run(); } catch (_) {}
+
+  return { success: true, totalExecuted };
+}
+
 let dbReady = false;
 
 async function ensureDatabaseReady(db: DatabaseAdapter) {
   if (dbReady) return;
+
   try {
-    const table = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='promotional_banners'").first().catch(() => null);
-    if (!table) {
-      console.log('[Shop da Cidade] Initializing D1 database schema and seeds...');
-      try {
-        await db.exec(INITIAL_SCHEMA_SQL);
-      } catch (execErr) {
-        console.warn('[Shop da Cidade] Bulk exec failed, executing statement-by-statement:', execErr);
-        const statements = INITIAL_SCHEMA_SQL
-          .split(';')
-          .map(s => s.trim())
-          .filter(s => s.length > 0 && !s.startsWith('--'));
-        for (const sql of statements) {
-          try {
-            await db.exec(sql);
-          } catch (_) {}
-        }
-      }
-      console.log('[Shop da Cidade] D1 database initialized.');
+    // Check if critical tables 'users' and 'platform_settings' exist in D1 SQLite
+    const usersTable = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").first().catch(() => null);
+    const settingsTable = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='platform_settings'").first().catch(() => null);
+
+    if (!usersTable || !settingsTable) {
+      console.log('[Shop da Cidade] Initializing complete D1 schema and initial seeds...');
+      await runSchemaMigration(db);
+      console.log('[Shop da Cidade] D1 database initialized successfully.');
     }
 
-    // Ensure 2FA columns exist in users table
-    try { await db.exec('ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER DEFAULT 0;'); } catch (_) {}
-    try { await db.exec('ALTER TABLE users ADD COLUMN two_factor_secret TEXT;'); } catch (_) {}
-    try { await db.exec('ALTER TABLE users ADD COLUMN two_factor_backup_codes TEXT;'); } catch (_) {}
-
-    dbReady = true;
+    // Verify users table exists now
+    const verified = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").first().catch(() => null);
+    if (verified) {
+      dbReady = true;
+    }
   } catch (err) {
     console.error('[Shop da Cidade] DB auto-init error:', err);
-    dbReady = true;
   }
 }
 

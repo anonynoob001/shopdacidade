@@ -103,7 +103,15 @@ class CloudflareD1Adapter implements DatabaseAdapter {
   }
 
   async exec(query: string): Promise<void> {
-    await this.d1.exec(query);
+    if (typeof this.d1.exec === 'function') {
+      try {
+        await this.d1.exec(query);
+      } catch {
+        await this.d1.prepare(query).run();
+      }
+    } else {
+      await this.d1.prepare(query).run();
+    }
   }
 
   async batch(statements: any[]): Promise<any[]> {
