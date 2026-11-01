@@ -38,7 +38,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   official_email: 'atendimento@shopdacidade.com.br',
   banner_notice: 'Bem-vindo ao Shop da Cidade! Conectando você às melhores lojas e prestadores de Canaã dos Carajás - PA.',
   banner_notice_active: '1',
-  demo_mode_enabled: '1'
+  demo_mode_enabled: '0'
 };
 
 interface ThemeContextType {

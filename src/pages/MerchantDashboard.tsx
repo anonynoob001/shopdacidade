@@ -55,7 +55,7 @@ const COLOR_PRESETS = [
 ];
 
 export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate }) => {
-  const { user, openAuthModal, quickSwitch } = useAuth();
+  const { user, openAuthModal } = useAuth();
   const [store, setStore] = useState<Store | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<SubOrder[]>([]);
@@ -163,6 +163,95 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
       await loadMerchantData();
     } catch (err: any) {
       alert(err?.message || 'Falha ao atualizar status.');
+    }
+  };
+
+  const handlePrintOrder = (order: any) => {
+    const printWindow = window.open('', '_blank', 'width=450,height=600');
+    if (!printWindow) return;
+    const storeName = store?.name || 'Shop da Cidade';
+    const orderCode = order.sub_order_code || order.id;
+    const dateFormatted = new Date(order.created_at).toLocaleString('pt-BR');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Comanda #${orderCode}</title>
+          <style>
+            @page { size: 80mm auto; margin: 0; }
+            body { font-family: monospace; font-size: 12px; margin: 8px; color: #000; width: 72mm; }
+            .center { text-align: center; }
+            .bold { font-weight: bold; }
+            .dashed { border-top: 1px dashed #000; margin: 6px 0; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+          </style>
+        </head>
+        <body>
+          <div class="center bold" style="font-size: 14px;">${storeName}</div>
+          <div class="center">Shop da Cidade • Canaã dos Carajás - PA</div>
+          <div class="dashed"></div>
+          <div><strong>PEDIDO: #${orderCode}</strong></div>
+          <div>Data/Hora: ${dateFormatted}</div>
+          <div>Status: ${order.status.toUpperCase()}</div>
+          <div class="dashed"></div>
+          <div class="bold">VALORES:</div>
+          <div style="display:flex; justify-content:space-between; margin-top: 4px;">
+            <span>Subtotal Produtos:</span>
+            <span>R$ ${(order.store_subtotal || 0).toFixed(2)}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Taxa de Entrega:</span>
+            <span>R$ ${(order.delivery_fee || 0).toFixed(2)}</span>
+          </div>
+          <div class="dashed"></div>
+          <div style="display:flex; justify-content:space-between; font-size: 13px; font-weight: bold;">
+            <span>TOTAL:</span>
+            <span>R$ ${((order.store_subtotal || 0) + (order.delivery_fee || 0)).toFixed(2)}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size: 11px; margin-top: 4px;">
+            <span>Líquido Loja:</span>
+            <span>R$ ${(order.store_net_amount || 0).toFixed(2)}</span>
+          </div>
+          <div class="dashed"></div>
+          <div class="center" style="font-size: 10px; margin-top: 10px;">
+            Agradecemos a sua preferência!<br/>
+            Shop da Cidade • Canaã dos Carajás
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  };
+
+  const handleNotifyWhatsApp = (order: any) => {
+    const storeName = store?.name || 'Shop da Cidade';
+    const orderCode = order.sub_order_code || order.id;
+    const total = formatBRL((order.store_subtotal || 0) + (order.delivery_fee || 0));
+    const statusLabel = order.status === 'preparing' ? 'Em Preparo' : order.status === 'out_for_delivery' ? 'Saiu para Entrega' : 'Recebido';
+    const text = encodeURIComponent(
+      `Olá! Aqui é da loja *${storeName}* pelo Shop da Cidade (Canaã dos Carajás).\n` +
+      `Seu pedido *#${orderCode}* no valor total de *${total}* foi atualizado!\n` +
+      `Status atual: *${statusLabel}*.\n` +
+      `Estamos cuidando de tudo com carinho para você!`
+    );
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
+
+  const handleCallVainabag = async (orderId: string) => {
+    try {
+      const res = await apiRequest<{ success: boolean; message: string; dispatch?: any }>('/api/deliveries/vainabag/dispatch', {
+        method: 'POST',
+        body: JSON.stringify({ sub_order_id: orderId })
+      });
+      alert(res.message || 'Entrega solicitada à Vainabag com sucesso!');
+      await loadMerchantData();
+    } catch (err: any) {
+      alert(err?.message || 'Falha ao solicitar entregador Vainabag.');
     }
   };
 
@@ -326,15 +415,15 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
         <div className="pt-2 flex flex-col gap-2">
           <button
             onClick={() => onNavigate('partner-register')}
-            className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md transition"
+            className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md transition cursor-pointer"
           >
             Cadastrar Minha Loja Agora
           </button>
           <button
-            onClick={() => quickSwitch('lojista')}
-            className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+            onClick={() => openAuthModal('login')}
+            className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer"
           >
-            Alternar para Loja de Demonstração
+            Já tenho uma loja cadastrada (Fazer Login)
           </button>
         </div>
       </div>
@@ -594,11 +683,45 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Thermal Receipt Print Button */}
+                    <button
+                      type="button"
+                      onClick={() => handlePrintOrder(order)}
+                      title="Imprimir Comanda Térmica (58mm/80mm)"
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* WhatsApp notification button */}
+                    <button
+                      type="button"
+                      onClick={() => handleNotifyWhatsApp(order)}
+                      title="Notificar Cliente via WhatsApp"
+                      className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-xs flex items-center gap-1 transition cursor-pointer"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">WhatsApp</span>
+                    </button>
+
+                    {/* Call Vainabag delivery partner button */}
+                    {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                      <button
+                        type="button"
+                        onClick={() => handleCallVainabag(order.id)}
+                        title="Solicitar Entregador Vainabag"
+                        className="px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-700 font-bold text-xs flex items-center gap-1 transition cursor-pointer"
+                      >
+                        <Truck className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Vainabag</span>
+                      </button>
+                    )}
+
                     {order.status === 'pending' && (
                       <button
                         onClick={() => handleUpdateOrderStatus(order.id, 'preparing')}
-                        className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs"
+                        className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs cursor-pointer"
                       >
                         Aceitar & Preparar
                       </button>
@@ -606,7 +729,7 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
                     {order.status === 'preparing' && (
                       <button
                         onClick={() => handleUpdateOrderStatus(order.id, 'out_for_delivery')}
-                        className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs"
+                        className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs cursor-pointer"
                       >
                         Despachar Entrega
                       </button>
@@ -614,7 +737,7 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
                     {order.status === 'out_for_delivery' && (
                       <button
                         onClick={() => handleUpdateOrderStatus(order.id, 'delivered')}
-                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer"
                       >
                         Confirmar Entrega
                       </button>

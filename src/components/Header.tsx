@@ -43,26 +43,17 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   onSearchSubmit
 }) => {
-  const { user, openAuthModal, logout, quickSwitch } = useAuth();
+  const { user, openAuthModal, logout } = useAuth();
   const { totalItemCount } = useCart();
   const { settings } = useSiteTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isDemoMenuOpen, setIsDemoMenuOpen] = useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       onSearchSubmit();
     }
   };
-
-  const demoRoles: Array<{ role: UserRole; label: string; desc: string; icon: any }> = [
-    { role: 'superadmin', label: 'Super Admin', desc: 'Controle total da plataforma', icon: Shield },
-    { role: 'lojista', label: 'Lojista', desc: 'Gerenciar loja e produtos', icon: Store },
-    { role: 'prestador', label: 'Prestador', desc: 'Orçamentos e agenda', icon: Wrench },
-    { role: 'entregador', label: 'Entregador', desc: 'Painel de coletas e corridas', icon: Truck },
-    { role: 'cliente', label: 'Cliente', desc: 'Comprador de Canaã', icon: UserIcon }
-  ];
 
   return (
     <header className="relative z-40 bg-slate-900 border-b border-slate-800 text-white shadow-md">
@@ -102,73 +93,6 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Demo Switcher banner for evaluation (can be disabled in Admin Settings) */}
           <div className="flex items-center gap-3">
-            {settings.demo_mode_enabled !== '0' && (
-              <div className="relative">
-                <button
-                  onClick={() => setIsDemoMenuOpen(!isDemoMenuOpen)}
-                  className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-750 text-slate-200 border border-amber-500/40 text-[11px] font-medium transition cursor-pointer"
-                  title="Trocar perfil de teste instantaneamente (Modo Protótipo)"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                  <span className="text-[10px] text-amber-300 font-semibold uppercase tracking-wider">Modo Teste:</span>
-                  <span><strong className="text-white capitalize">{user?.role || 'Visitante'}</strong></span>
-                  <ChevronDown className="w-3 h-3 text-slate-400 ml-0.5" />
-                </button>
-
-                {isDemoMenuOpen && (
-                  <div className="absolute right-0 mt-1 w-72 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95">
-                    <div className="px-3.5 py-2 border-b border-slate-800 mb-1">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Modo Demonstração</p>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-300 font-mono">Dev / Testes</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1 leading-snug">
-                        Atalho rápido para testes de telas. <strong>Em produção, este atalho deve ser desativado no Painel Admin</strong> para que ninguém entre sem senha.
-                      </p>
-                    </div>
-
-                    <div className="py-1">
-                      {demoRoles.map(item => {
-                        const Icon = item.icon;
-                        const isActive = user?.role === item.role;
-                        return (
-                          <button
-                            key={item.role}
-                            onClick={() => {
-                              quickSwitch(item.role);
-                              setIsDemoMenuOpen(false);
-                            }}
-                            className={`w-full text-left px-3.5 py-2 flex items-center gap-2.5 text-xs hover:bg-slate-800 transition cursor-pointer ${
-                              isActive ? 'bg-amber-400/10 text-amber-300 font-bold' : 'text-slate-300'
-                            }`}
-                          >
-                            <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
-                            <div className="truncate">
-                              <div>{item.label}</div>
-                              <div className="text-[10px] text-slate-500 truncate">{item.desc}</div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <div className="px-3 py-2 border-t border-slate-800/80 mt-1 flex items-center justify-between text-[10px] text-slate-400">
-                      <span>Desativar em definitivo:</span>
-                      <button
-                        onClick={() => {
-                          onNavigate('admin');
-                          setIsDemoMenuOpen(false);
-                        }}
-                        className="text-amber-400 hover:underline font-semibold cursor-pointer"
-                      >
-                        Painel Admin &rarr;
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
             <PWAInstallButton />
           </div>
         </div>

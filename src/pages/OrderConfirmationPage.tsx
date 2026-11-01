@@ -4,6 +4,7 @@ import {
   CheckCircle,
   Copy,
   ExternalLink,
+  MessageCircle,
   Package,
   QrCode,
   ShieldCheck,
@@ -203,18 +204,29 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ or
           ))}
         </div>
 
-        <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
           <button
             onClick={() => onNavigate('my-orders')}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer"
           >
             Acompanhar Meus Pedidos
           </button>
+
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(`Olá! Acabei de registrar o pedido #${order.order_code} no Shop da Cidade (Canaã dos Carajás, PA) no valor de ${formatBRL(order.total_amount)}!`)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>Falar com o Atendimento via WhatsApp</span>
+          </a>
+
           <button
             onClick={() => onNavigate('home')}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition cursor-pointer"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition cursor-pointer"
           >
-            Voltar para a Página Inicial
+            Voltar para o Início
           </button>
         </div>
       </div>

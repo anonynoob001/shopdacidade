@@ -1,7 +1,13 @@
-// Shop Carajás - Authentication & User Context
+// Shop Carajás - Authentication & User Context (2FA & Session Security)
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiRequest, getAuthToken, setAuthToken } from '../services/api';
 import { Courier, ServiceProvider, Store, User, UserRole } from '../worker/types';
+
+export interface LoginResult {
+  twoFactorRequired?: boolean;
+  tempToken?: string;
+  message?: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -13,9 +19,9 @@ interface AuthContextType {
   authModalMode: 'login' | 'register';
   openAuthModal: (mode?: 'login' | 'register') => void;
   closeAuthModal: () => void;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginResult | void>;
+  login2FA: (tempToken: string, code: string) => Promise<void>;
   register: (data: { name: string; email: string; password: string; phone?: string; role?: UserRole }) => Promise<void>;
-  quickSwitch: (role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -61,10 +67,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const res = await apiRequest<{ success: boolean; token: string; user: User }>('/api/auth/login', {
+  const login = async (email: string, password: string): Promise<LoginResult | void> => {
+    const res = await apiRequest<{
+      success: boolean;
+      token?: string;
+      user?: User;
+      two_factor_required?: boolean;
+      temp_token?: string;
+      message?: string;
+    }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password })
+    });
+
+    if (res.two_factor_required && res.temp_token) {
+      return {
+        twoFactorRequired: true,
+        tempToken: res.temp_token,
+        message: res.message
+      };
+    }
+
+    if (res.token) {
+      setAuthToken(res.token);
+      await refreshUser();
+      setIsAuthModalOpen(false);
+    }
+  };
+
+  const login2FA = async (tempToken: string, code: string): Promise<void> => {
+    const res = await apiRequest<{ success: boolean; token: string; user: User }>('/api/auth/login-2fa', {
+      method: 'POST',
+      body: JSON.stringify({ temp_token: tempToken, code })
     });
     setAuthToken(res.token);
     await refreshUser();
@@ -79,22 +113,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAuthToken(res.token);
     await refreshUser();
     setIsAuthModalOpen(false);
-  };
-
-  const quickSwitch = async (role: UserRole) => {
-    setIsLoading(true);
-    try {
-      const res = await apiRequest<{ success: boolean; token: string; user: User }>('/api/auth/quick-switch', {
-        method: 'POST',
-        body: JSON.stringify({ role })
-      });
-      setAuthToken(res.token);
-      await refreshUser();
-    } catch (err: any) {
-      console.error('Quick switch error:', err);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const logout = async () => {
@@ -132,8 +150,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         openAuthModal,
         closeAuthModal,
         login,
+        login2FA,
         register,
-        quickSwitch,
         logout,
         refreshUser
       }}

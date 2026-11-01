@@ -1,5 +1,6 @@
-// Shop Carajás - Couriers & Deliveries Module
+// Shop Carajás - Couriers & Deliveries Module (Local Couriers & Vainabag Delivery API)
 import { DatabaseAdapter } from '../db';
+import { getVainabagService } from '../services/vainabag';
 import { User } from '../types';
 
 export async function handleDeliveriesRoutes(req: { method: string; path: string; body?: any; user?: User | null }, db: DatabaseAdapter) {
@@ -184,6 +185,102 @@ export async function handleDeliveriesRoutes(req: { method: string; path: string
     `).bind(status, ...extraParams, deliveryId).run();
 
     return { status: 200, data: { success: true, status } };
+  }
+
+  // GET /api/deliveries/vainabag/status
+  if (method === 'GET' && path === '/api/deliveries/vainabag/status') {
+    const vainabag = await getVainabagService(db);
+    const settingsRows = await db.prepare("SELECT key, value FROM platform_settings WHERE key LIKE 'vainabag_%'").all<any>();
+    const conf: Record<string, string> = {};
+    for (const r of settingsRows?.results || []) conf[r.key] = r.value;
+
+    return {
+      status: 200,
+      data: {
+        is_configured: vainabag.isConfigured(),
+        environment: conf['vainabag_env'] || 'sandbox',
+        client_id_masked: conf['vainabag_client_id'] ? `${conf['vainabag_client_id'].slice(0, 6)}...` : '',
+        store_code: conf['vainabag_store_code'] || ''
+      }
+    };
+  }
+
+  // POST /api/deliveries/vainabag/quote (Estimate delivery fee)
+  if (method === 'POST' && path === '/api/deliveries/vainabag/quote') {
+    const { neighborhood, package_value = 50 } = body || {};
+    const vainabag = await getVainabagService(db);
+    const quote = await vainabag.estimateDeliveryFee({
+      neighborhood: neighborhood || 'Centro',
+      packageValue: Number(package_value)
+    });
+    return { status: 200, data: quote };
+  }
+
+  // POST /api/deliveries/vainabag/dispatch (Dispatch order delivery to Vainabag)
+  if (method === 'POST' && path === '/api/deliveries/vainabag/dispatch') {
+    if (!user) return { status: 401, data: { error: 'Autenticação necessária.' } };
+
+    const { sub_order_id } = body || {};
+    if (!sub_order_id) {
+      return { status: 400, data: { error: 'ID do pedido obrigatório.' } };
+    }
+
+    const subOrder = await db.prepare(`
+      SELECT so.*, s.name as store_name, s.neighborhood as store_neighborhood,
+             o.customer_name, o.customer_phone, o.customer_street, o.customer_number,
+             o.customer_neighborhood, o.payment_method
+      FROM sub_orders so
+      JOIN stores s ON s.id = so.store_id
+      JOIN orders o ON o.id = so.order_id
+      WHERE so.id = ?
+    `).bind(sub_order_id).first<any>();
+
+    if (!subOrder) {
+      return { status: 404, data: { error: 'Pedido não encontrado.' } };
+    }
+
+    const items = await db.prepare('SELECT product_name as name, quantity, unit_price as price FROM order_items WHERE sub_order_id = ?').bind(sub_order_id).all<any>();
+
+    const vainabag = await getVainabagService(db);
+    const dispatchResult = await vainabag.createDeliveryOrder({
+      order_id: subOrder.sub_order_code || sub_order_id,
+      customer_name: subOrder.customer_name || 'Cliente',
+      customer_phone: subOrder.customer_phone || '(94) 99123-4567',
+      delivery_address: {
+        street: subOrder.customer_street || 'Av. Weyne Cavalcante',
+        number: subOrder.customer_number || 'S/N',
+        neighborhood: subOrder.customer_neighborhood || 'Centro',
+        city: 'Canaã dos Carajás',
+        state: 'PA'
+      },
+      items: items?.results || [{ name: 'Pedido Shop da Cidade', quantity: 1, price: subOrder.total_amount }],
+      total_amount: subOrder.total_amount,
+      payment_method: subOrder.payment_method || 'PIX'
+    });
+
+    // Update sub_order status to dispatched / out_for_delivery
+    await db.prepare("UPDATE sub_orders SET status = 'out_for_delivery', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(sub_order_id).run();
+
+    return {
+      status: 200,
+      data: {
+        success: true,
+        message: 'Entrega solicitada à Vainabag com sucesso!',
+        dispatch: dispatchResult
+      }
+    };
+  }
+
+  // POST /api/deliveries/vainabag/simulate (Advance sandbox order)
+  if (method === 'POST' && path === '/api/deliveries/vainabag/simulate') {
+    const { order_id, step } = body || {};
+    if (!order_id || !step) {
+      return { status: 400, data: { error: 'order_id e step são obrigatórios.' } };
+    }
+
+    const vainabag = await getVainabagService(db);
+    const simResult = await vainabag.simulateStep(order_id, step);
+    return { status: 200, data: simResult };
   }
 
   return null;

@@ -16,6 +16,7 @@ import {
   FileCode,
   FileSpreadsheet,
   Globe,
+  KeyRound,
   Layers,
   Lock,
   Package,
@@ -27,6 +28,7 @@ import {
   Search,
   Server,
   Shield,
+  ShieldCheck,
   ShoppingBag,
   Sliders,
   Sparkles,
@@ -165,6 +167,110 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   const [bannerSubtitle, setBannerSubtitle] = useState('');
   const [bannerImage, setBannerImage] = useState('');
   const [bannerLink, setBannerLink] = useState('/lojas');
+
+  // 2FA Two-Factor Authentication state
+  const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
+  const [twoFactorSetupData, setTwoFactorSetupData] = useState<{
+    secret: string;
+    otpauth_uri: string;
+    qr_code_data_url: string;
+    backup_codes: string[];
+  } | null>(null);
+  const [twoFactorVerifyCode, setTwoFactorVerifyCode] = useState('');
+  const [isActivating2FA, setIsActivating2FA] = useState(false);
+  const [twoFactorError, setTwoFactorError] = useState<string | null>(null);
+  const [twoFactorSuccess, setTwoFactorSuccess] = useState<string | null>(null);
+  const [copiedSecret, setCopiedSecret] = useState(false);
+  const [copiedBackupCodes, setCopiedBackupCodes] = useState(false);
+
+  const [isDisable2FAModalOpen, setIsDisable2FAModalOpen] = useState(false);
+  const [disablePassword, setDisablePassword] = useState('');
+  const [isDisabling2FA, setIsDisabling2FA] = useState(false);
+  const [disable2FAError, setDisable2FAError] = useState<string | null>(null);
+
+  // Vainabag test quote state
+  const [vainabagTestResult, setVainabagTestResult] = useState<any>(null);
+  const [isTestingVainabag, setIsTestingVainabag] = useState(false);
+
+  const handleOpen2FASetup = async () => {
+    setIs2FAModalOpen(true);
+    setTwoFactorError(null);
+    setTwoFactorSuccess(null);
+    setTwoFactorVerifyCode('');
+    try {
+      const res = await apiRequest<{
+        success: boolean;
+        secret: string;
+        otpauth_uri: string;
+        qr_code_data_url: string;
+        backup_codes: string[];
+      }>('/api/auth/2fa/setup');
+      setTwoFactorSetupData(res);
+    } catch (err: any) {
+      setTwoFactorError(err?.message || 'Falha ao carregar chave de 2FA.');
+    }
+  };
+
+  const handleConfirm2FAActivation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!twoFactorSetupData || !twoFactorVerifyCode.trim()) return;
+    setIsActivating2FA(true);
+    setTwoFactorError(null);
+    try {
+      const res = await apiRequest<{ success: boolean; message: string }>('/api/auth/2fa/verify-activate', {
+        method: 'POST',
+        body: JSON.stringify({
+          secret: twoFactorSetupData.secret,
+          code: twoFactorVerifyCode.trim(),
+          backup_codes: twoFactorSetupData.backup_codes
+        })
+      });
+      setTwoFactorSuccess(res.message);
+      setTimeout(() => {
+        setIs2FAModalOpen(false);
+        window.location.reload();
+      }, 2500);
+    } catch (err: any) {
+      setTwoFactorError(err?.message || 'Código incorreto. Verifique o relógio do seu celular e tente novamente.');
+    } finally {
+      setIsActivating2FA(false);
+    }
+  };
+
+  const handleDisable2FA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!disablePassword) return;
+    setIsDisabling2FA(true);
+    setDisable2FAError(null);
+    try {
+      await apiRequest('/api/auth/2fa/disable', {
+        method: 'POST',
+        body: JSON.stringify({ password: disablePassword })
+      });
+      setIsDisable2FAModalOpen(false);
+      window.location.reload();
+    } catch (err: any) {
+      setDisable2FAError(err?.message || 'Senha incorreta.');
+    } finally {
+      setIsDisabling2FA(false);
+    }
+  };
+
+  const handleTestVainabagQuote = async () => {
+    setIsTestingVainabag(true);
+    setVainabagTestResult(null);
+    try {
+      const res = await apiRequest('/api/deliveries/vainabag/quote', {
+        method: 'POST',
+        body: JSON.stringify({ neighborhood: 'Centro', package_value: 80.0 })
+      });
+      setVainabagTestResult(res);
+    } catch (err: any) {
+      setVainabagTestResult({ error: err?.message || 'Falha na cotação da Vainabag' });
+    } finally {
+      setIsTestingVainabag(false);
+    }
+  };
 
   // Admin password change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -1121,6 +1227,177 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             </button>
           </form>
         </div>
+
+        {/* 2FA Security Card */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4 max-w-3xl">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                  Autenticação em Dois Fatores (2FA / Google Authenticator)
+                  {user?.two_factor_enabled ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">
+                      Ativo & Protegido
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-wider">
+                      Recomendado Ativar
+                    </span>
+                  )}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Proteja a conta de Super Administrador contra acessos indevidos exigindo um código de 6 dígitos gerado em aplicativo móvel (Google Authenticator, Authy ou Microsoft Authenticator) a cada login.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2">
+            <p>
+              <strong>Como funciona:</strong> Ao ativar, você aponta a câmera do seu celular para escanear o QR Code no Google Authenticator. Mesmo se alguém descobrir sua senha, não conseguirá entrar sem o código dinâmico gerado no seu celular.
+            </p>
+            {user?.two_factor_enabled ? (
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setDisablePassword(''); setDisable2FAError(null); setIsDisable2FAModalOpen(true); }}
+                  className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs transition cursor-pointer"
+                >
+                  Desativar 2FA (Requer Senha)
+                </button>
+                <span className="text-[11px] text-emerald-700 font-semibold">
+                  ✓ Sua conta está protegida com TOTP RFC 6238 e códigos reserva.
+                </span>
+              </div>
+            ) : (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleOpen2FASetup}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-2 transition cursor-pointer shadow-sm"
+                >
+                  <KeyRound className="w-4 h-4" />
+                  Configurar 2FA com Aplicativo Authenticator
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Vainabag Delivery Integration Card */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4 max-w-3xl">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-sky-50 text-sky-600">
+                <Truck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                  Integração de Entregas Vainabag
+                  {settings['vainabag_client_id'] ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-900 text-[10px] font-black uppercase tracking-wider">
+                      {settings['vainabag_env'] === 'production' ? 'Produção' : 'Ambiente Sandbox'}
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider">
+                      Não Configurado
+                    </span>
+                  )}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Conecte a API de Entregas da <strong>Vainabag</strong> para cotação automática de taxas por bairro e solicitação direta de entregadores parceiros.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Client ID (Vainabag)</label>
+                <input
+                  type="text"
+                  value={settings['vainabag_client_id'] || ''}
+                  onChange={e => setSettings({ ...settings, vainabag_client_id: e.target.value })}
+                  placeholder="eak_... ou epk_..."
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Client Secret (Vainabag)</label>
+                <input
+                  type="password"
+                  value={settings['vainabag_client_secret'] || ''}
+                  onChange={e => setSettings({ ...settings, vainabag_client_secret: e.target.value })}
+                  placeholder="eas_... ou eps_..."
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Código da Loja Vainabag (X-Vainabag-Store)</label>
+                <input
+                  type="text"
+                  value={settings['vainabag_store_code'] || ''}
+                  onChange={e => setSettings({ ...settings, vainabag_store_code: e.target.value })}
+                  placeholder="vb_..."
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
+                />
+                <span className="text-[10px] text-slate-400">Opcional para credencial individual ou obrigatório se credencial de parceiro (epk_).</span>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Ambiente da API</label>
+                <select
+                  value={settings['vainabag_env'] || 'sandbox'}
+                  onChange={e => setSettings({ ...settings, vainabag_env: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white cursor-pointer"
+                >
+                  <option value="sandbox">Ambiente Sandbox / Testes (Não chama entregador real)</option>
+                  <option value="production">Produção Real (Corridas reais)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSaveSettings}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition cursor-pointer shadow-sm"
+              >
+                Salvar Configurações Vainabag
+              </button>
+
+              <button
+                type="button"
+                disabled={isTestingVainabag}
+                onClick={handleTestVainabagQuote}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer disabled:opacity-50"
+              >
+                {isTestingVainabag ? 'Consultando...' : 'Testar Cotação de Taxa (Centro - Canaã)'}
+              </button>
+            </div>
+
+            {vainabagTestResult && (
+              <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 text-xs font-medium">
+                {vainabagTestResult.error ? (
+                  <span className="text-rose-600 font-bold">Erro: {vainabagTestResult.error}</span>
+                ) : (
+                  <div>
+                    <span className="font-bold text-sky-950">✓ Cotação simulada com sucesso:</span>
+                    <span className="ml-2 font-mono">Taxa: {formatBRL(vainabagTestResult.fee)} | Prazo estimado: {vainabagTestResult.estimatedMinutes}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     )}
 
@@ -1702,10 +1979,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
               <div className="shrink-0 p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-slate-900 text-center font-bold text-[11px] min-w-[150px]">
                 <CreditCard className="w-5 h-5 mx-auto mb-1 text-emerald-600" />
                 <span className="block font-black text-emerald-900">
-                  {asaasApiKey ? 'Asaas Ativo' : 'Modo Demonstração'}
+                  {asaasApiKey ? 'Asaas Ativo' : 'Aguardando Configuração'}
                 </span>
                 <span className="text-[10px] text-slate-500">
-                  {asaasEnvironment === 'production' ? 'Produção Real' : 'Ambiente Sandbox'}
+                  {asaasApiKey ? (asaasEnvironment === 'production' ? 'Produção Real' : 'Ambiente Sandbox') : 'Insira a chave da API'}
                 </span>
               </div>
             </div>
@@ -2304,6 +2581,224 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                   className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow-md cursor-pointer"
                 >
                   Criar Banner
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CONFIGURAR 2FA (GOOGLE AUTHENTICATOR) */}
+      {is2FAModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-white relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setIs2FAModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white tracking-tight">
+                  Configurar Autenticação em Duas Etapas (2FA)
+                </h3>
+                <p className="text-xs text-slate-400">Google Authenticator, Authy ou Microsoft Authenticator</p>
+              </div>
+            </div>
+
+            {twoFactorError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                <span>{twoFactorError}</span>
+              </div>
+            )}
+
+            {twoFactorSuccess && (
+              <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{twoFactorSuccess}</span>
+              </div>
+            )}
+
+            {twoFactorSetupData ? (
+              <form onSubmit={handleConfirm2FAActivation} className="space-y-4 text-xs">
+                {/* Step 1: Scan QR Code */}
+                <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/80 text-center">
+                  <p className="font-bold text-slate-200 mb-2">1. Escaneie este QR Code no aplicativo do seu celular:</p>
+                  <div className="inline-block p-2 bg-white rounded-2xl shadow-md">
+                    <img
+                      src={twoFactorSetupData.qr_code_data_url}
+                      alt="QR Code 2FA"
+                      className="w-48 h-48 mx-auto object-contain rounded-xl"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-2">
+                    Abra o <strong>Google Authenticator</strong> no celular, toque no <strong>+</strong> e escolha <strong>Escanear código QR</strong>.
+                  </p>
+                </div>
+
+                {/* Step 2: Secret key manual */}
+                <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
+                  <p className="text-[11px] font-bold text-slate-300 mb-1">Ou digite a chave manualmente:</p>
+                  <div className="flex items-center justify-between gap-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800 font-mono text-[11px] text-amber-300">
+                    <span className="truncate">{twoFactorSetupData.secret}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(twoFactorSetupData.secret);
+                        setCopiedSecret(true);
+                        setTimeout(() => setCopiedSecret(false), 2000);
+                      }}
+                      className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] flex items-center gap-1 cursor-pointer transition shrink-0"
+                    >
+                      {copiedSecret ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedSecret ? 'Copiado!' : 'Copiar'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Step 3: Backup codes */}
+                <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[11px] font-bold text-slate-300">Códigos Reservas de Emergência:</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(twoFactorSetupData.backup_codes.join('\n'));
+                        setCopiedBackupCodes(true);
+                        setTimeout(() => setCopiedBackupCodes(false), 2000);
+                      }}
+                      className="text-[10px] text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedBackupCodes ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedBackupCodes ? 'Códigos Copiados!' : 'Copiar Todos'}</span>
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {twoFactorSetupData.backup_codes.map((code, idx) => (
+                      <div key={idx} className="bg-slate-950 px-2.5 py-1 rounded border border-slate-800/80 font-mono text-[11px] text-slate-300 text-center">
+                        {code}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1.5">
+                    Guarde esses códigos em um local seguro. Cada um permite entrar na conta caso perca o celular.
+                  </p>
+                </div>
+
+                {/* Step 4: Verification code input */}
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1.5">
+                    2. Digite o código de 6 dígitos que apareceu no aplicativo para confirmar:
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      autoFocus
+                      maxLength={6}
+                      value={twoFactorVerifyCode}
+                      onChange={e => setTwoFactorVerifyCode(e.target.value)}
+                      placeholder="000000"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-center font-mono text-lg font-black tracking-widest focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                    />
+                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIs2FAModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isActivating2FA || !twoFactorVerifyCode.trim()}
+                    className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black shadow-md transition disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                  >
+                    {isActivating2FA ? 'Confirmando...' : 'Ativar e Proteger Conta'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-3">
+                <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs">Gerando chaves criptográficas seguras...</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DESATIVAR 2FA */}
+      {isDisable2FAModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-white relative">
+            <button
+              onClick={() => setIsDisable2FAModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-400">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white tracking-tight">
+                  Desativar Autenticação em Duas Etapas
+                </h3>
+                <p className="text-xs text-slate-400">Confirmação de segurança</p>
+              </div>
+            </div>
+
+            {disable2FAError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium">
+                {disable2FAError}
+              </div>
+            )}
+
+            <form onSubmit={handleDisable2FA} className="space-y-4 text-xs">
+              <p className="text-slate-300">
+                Para confirmar a desativação do 2FA, por favor digite a sua senha atual de administrador:
+              </p>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Senha de Acesso</label>
+                <input
+                  type="password"
+                  required
+                  autoFocus
+                  value={disablePassword}
+                  onChange={e => setDisablePassword(e.target.value)}
+                  placeholder="Digite sua senha atual"
+                  className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsDisable2FAModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isDisabling2FA || !disablePassword}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black shadow-md transition disabled:opacity-50 cursor-pointer"
+                >
+                  {isDisabling2FA ? 'Desativando...' : 'Confirmar Desativação'}
                 </button>
               </div>
             </form>

@@ -42,9 +42,26 @@ export async function handlePublicRoutes(req: { method: string; path: string; qu
         db.prepare('SELECT * FROM local_ads WHERE is_active = 1 LIMIT 4').all().catch(() => ({ results: [] }))
       ]);
 
+      const PUBLIC_ALLOWED_SETTINGS = new Set([
+        'platform_name',
+        'site_tagline',
+        'city_name',
+        'city_state',
+        'contact_whatsapp',
+        'contact_email',
+        'contact_address',
+        'default_commission_rate',
+        'theme_color_primary',
+        'theme_color_secondary',
+        'announcement_text',
+        'maintenance_mode'
+      ]);
+
       const settingsObj: Record<string, string> = {};
       for (const row of ((settingsRows?.results || []) as any[])) {
-        settingsObj[row.key] = row.value;
+        if (PUBLIC_ALLOWED_SETTINGS.has(row.key)) {
+          settingsObj[row.key] = row.value;
+        }
       }
 
       return {

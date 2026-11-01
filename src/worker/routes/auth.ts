@@ -1,6 +1,23 @@
-// Shop Carajás - Auth Routes
+// Shop Carajás - Auth Routes & Security (2FA / Anti-Brute Force)
+import QRCode from 'qrcode';
 import { DatabaseAdapter } from '../db';
-import { createSession, deleteSession, generateSalt, getUserByToken, hashPassword, verifyPassword } from '../services/auth';
+import {
+  checkLoginRateLimit,
+  clearFailedLogin,
+  createSession,
+  createTemp2FASession,
+  deleteSession,
+  generateBackupCodes,
+  generateSalt,
+  generateTwoFactorSecret,
+  getOtpauthUri,
+  getUserByToken,
+  hashPassword,
+  recordFailedLogin,
+  verifyPassword,
+  verifyTemp2FASession,
+  verifyTotp
+} from '../services/auth';
 import { User, UserRole } from '../types';
 
 export async function handleAuthRoutes(req: { method: string; path: string; body?: any; headers: any; user?: User | null }, db: DatabaseAdapter) {
@@ -126,7 +143,7 @@ export async function handleAuthRoutes(req: { method: string; path: string; body
     };
   }
 
-  // POST /api/auth/login
+  // POST /api/auth/login (with Anti-Brute Force Rate Limiting & 2FA support)
   if (method === 'POST' && path === '/api/auth/login') {
     const { email, password } = body || {};
     if (!email || !password) {
@@ -134,17 +151,49 @@ export async function handleAuthRoutes(req: { method: string; path: string; body
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
+
+    // 1. Anti-brute force rate limiting check
+    const rateCheck = checkLoginRateLimit(cleanEmail);
+    if (!rateCheck.allowed) {
+      return {
+        status: 429,
+        data: {
+          error: `Muitas tentativas incorretas. Conta temporariamente bloqueada por segurança. Tente novamente em ${rateCheck.waitMinutes} minutos.`
+        }
+      };
+    }
+
     const userRecord = await db.prepare('SELECT * FROM users WHERE email = ?').bind(cleanEmail).first<any>();
 
     if (!userRecord || !userRecord.is_active) {
+      recordFailedLogin(cleanEmail);
       return { status: 401, data: { error: 'Credenciais inválidas ou conta inativa.' } };
     }
 
     const isValid = await verifyPassword(password, userRecord.salt, userRecord.password_hash);
     if (!isValid) {
+      recordFailedLogin(cleanEmail);
       return { status: 401, data: { error: 'Credenciais inválidas.' } };
     }
 
+    // Success - clear failed attempt counters
+    clearFailedLogin(cleanEmail);
+
+    // Check if user has 2FA (Two-Factor Authentication) enabled
+    if (userRecord.two_factor_enabled && userRecord.two_factor_secret) {
+      const tempToken = createTemp2FASession(userRecord.id);
+      return {
+        status: 200,
+        data: {
+          success: true,
+          two_factor_required: true,
+          temp_token: tempToken,
+          message: 'Autenticação em duas etapas necessária. Digite o código de 6 dígitos do seu aplicativo autenticador.'
+        }
+      };
+    }
+
+    // Standard login without 2FA
     const token = await createSession(db, userRecord.id);
     const user: User = {
       id: userRecord.id,
@@ -153,6 +202,7 @@ export async function handleAuthRoutes(req: { method: string; path: string; body
       phone: userRecord.phone,
       role: userRecord.role as UserRole,
       is_active: userRecord.is_active,
+      two_factor_enabled: Boolean(userRecord.two_factor_enabled),
       created_at: userRecord.created_at,
       updated_at: userRecord.updated_at
     };
@@ -160,28 +210,56 @@ export async function handleAuthRoutes(req: { method: string; path: string; body
     return { status: 200, data: { success: true, token, user } };
   }
 
-  // POST /api/auth/quick-switch (Demo switcher for seamless test experience)
-  if (method === 'POST' && path === '/api/auth/quick-switch') {
-    // Check if demo mode is disabled in settings
-    try {
-      const demoSetting = await db.prepare("SELECT value FROM site_settings WHERE key = 'demo_mode_enabled'").first<any>();
-      if (demoSetting && String(demoSetting.value) === '0') {
-        return {
-          status: 403,
-          data: { error: 'O Modo de Demonstração foi desativado para segurança em produção. Acesse com seu e-mail e senha cadastrados.' }
-        };
-      }
-    } catch (_) {}
-
-    const { role } = body || {};
-    const validRoles = ['superadmin', 'admin', 'lojista', 'prestador', 'entregador', 'cliente'];
-    if (!validRoles.includes(role)) {
-      return { status: 400, data: { error: 'Perfil inválido para troca rápida.' } };
+  // POST /api/auth/login-2fa (Verify 2FA TOTP or Backup Code to finalize login)
+  if (method === 'POST' && path === '/api/auth/login-2fa') {
+    const { temp_token, code } = body || {};
+    if (!temp_token || !code) {
+      return { status: 400, data: { error: 'Token temporário e código de 6 dígitos são obrigatórios.' } };
     }
 
-    const userRecord = await db.prepare('SELECT * FROM users WHERE role = ? AND is_active = 1 LIMIT 1').bind(role).first<any>();
-    if (!userRecord) {
-      return { status: 404, data: { error: `Nenhum usuário com perfil ${role} encontrado.` } };
+    const userId = verifyTemp2FASession(temp_token);
+    if (!userId) {
+      return { status: 401, data: { error: 'Sessão temporária de 2FA expirada ou inválida. Por favor, tente fazer login novamente.' } };
+    }
+
+    const userRecord = await db.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first<any>();
+    if (!userRecord || !userRecord.is_active) {
+      return { status: 401, data: { error: 'Usuário não encontrado ou inativo.' } };
+    }
+
+    const cleanCode = String(code).trim().toUpperCase();
+    let isCodeValid = false;
+
+    // First, verify as standard 6-digit TOTP
+    if (/^\d{6}$/.test(cleanCode) && userRecord.two_factor_secret) {
+      isCodeValid = await verifyTotp(userRecord.two_factor_secret, cleanCode);
+    }
+
+    // If TOTP fails, check if it's an emergency backup code
+    if (!isCodeValid && userRecord.two_factor_backup_codes) {
+      try {
+        const backupCodes: string[] = JSON.parse(userRecord.two_factor_backup_codes);
+        const codeIndex = backupCodes.findIndex(c => c.replace(/-/g, '').toUpperCase() === cleanCode.replace(/-/g, ''));
+        if (codeIndex !== -1) {
+          isCodeValid = true;
+          // Consume the used backup code
+          backupCodes.splice(codeIndex, 1);
+          await db.prepare('UPDATE users SET two_factor_backup_codes = ? WHERE id = ?')
+            .bind(JSON.stringify(backupCodes), userId).run();
+        }
+      } catch (_) {}
+    }
+
+    if (!isCodeValid) {
+      // Re-create temp session so user can retry typing the code
+      const newTempToken = createTemp2FASession(userId);
+      return {
+        status: 401,
+        data: {
+          error: 'Código de 2FA inválido ou expirado. Verifique o relógio do seu celular ou use um código reserva.',
+          temp_token: newTempToken
+        }
+      };
     }
 
     const token = await createSession(db, userRecord.id);
@@ -192,11 +270,113 @@ export async function handleAuthRoutes(req: { method: string; path: string; body
       phone: userRecord.phone,
       role: userRecord.role as UserRole,
       is_active: userRecord.is_active,
+      two_factor_enabled: true,
       created_at: userRecord.created_at,
       updated_at: userRecord.updated_at
     };
 
     return { status: 200, data: { success: true, token, user } };
+  }
+
+  // GET /api/auth/2fa/setup (Generate secret, OTP URI, and scannable QR Code for Authenticator app)
+  if (method === 'GET' && path === '/api/auth/2fa/setup') {
+    if (!req.user) {
+      return { status: 401, data: { error: 'Autenticação necessária.' } };
+    }
+
+    const secret = generateTwoFactorSecret();
+    const backupCodes = generateBackupCodes(6);
+    const otpauthUri = getOtpauthUri(secret, req.user.email, 'Shop da Cidade');
+    
+    // Generate standard QR code data URL (image/png base64) for any mobile camera or authenticator
+    const qrCodeDataUrl = await QRCode.toDataURL(otpauthUri, {
+      width: 256,
+      margin: 2,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff'
+      }
+    });
+
+    return {
+      status: 200,
+      data: {
+        success: true,
+        secret,
+        otpauth_uri: otpauthUri,
+        qr_code_data_url: qrCodeDataUrl,
+        backup_codes: backupCodes
+      }
+    };
+  }
+
+  // POST /api/auth/2fa/verify-activate (Confirm activation by verifying first 6-digit code)
+  if (method === 'POST' && path === '/api/auth/2fa/verify-activate') {
+    if (!req.user) {
+      return { status: 401, data: { error: 'Autenticação necessária.' } };
+    }
+
+    const { secret, code, backup_codes } = body || {};
+    if (!secret || !code) {
+      return { status: 400, data: { error: 'Chave secreta e código de 6 dígitos são obrigatórios.' } };
+    }
+
+    const isValid = await verifyTotp(secret, String(code));
+    if (!isValid) {
+      return { status: 400, data: { error: 'Código de 6 dígitos inválido. Certifique-se de que digitou o código gerado pelo aplicativo autenticador.' } };
+    }
+
+    const now = new Date().toISOString();
+    await db.prepare(`
+      UPDATE users 
+      SET two_factor_enabled = 1, two_factor_secret = ?, two_factor_backup_codes = ?, updated_at = ?
+      WHERE id = ?
+    `).bind(secret, JSON.stringify(backup_codes || []), now, req.user.id).run();
+
+    return {
+      status: 200,
+      data: {
+        success: true,
+        message: 'Autenticação de Dois Fatores (2FA) ativada com sucesso! Sua conta agora está protegida.'
+      }
+    };
+  }
+
+  // POST /api/auth/2fa/disable (Disable 2FA after password confirmation)
+  if (method === 'POST' && path === '/api/auth/2fa/disable') {
+    if (!req.user) {
+      return { status: 401, data: { error: 'Autenticação necessária.' } };
+    }
+
+    const { password } = body || {};
+    if (!password) {
+      return { status: 400, data: { error: 'Senha de acesso é obrigatória para desativar o 2FA.' } };
+    }
+
+    const userRecord = await db.prepare('SELECT * FROM users WHERE id = ?').bind(req.user.id).first<any>();
+    if (!userRecord) {
+      return { status: 404, data: { error: 'Usuário não encontrado.' } };
+    }
+
+    const isValid = await verifyPassword(password, userRecord.salt, userRecord.password_hash);
+    if (!isValid) {
+      return { status: 401, data: { error: 'Senha incorreta.' } };
+    }
+
+    const now = new Date().toISOString();
+    await db.prepare(`
+      UPDATE users 
+      SET two_factor_enabled = 0, two_factor_secret = NULL, two_factor_backup_codes = NULL, updated_at = ?
+      WHERE id = ?
+    `).bind(now, req.user.id).run();
+
+    return {
+      status: 200,
+      data: {
+        success: true,
+        message: 'Autenticação de Dois Fatores (2FA) desativada com sucesso.'
+      }
+    };
   }
 
   // POST /api/auth/change-password

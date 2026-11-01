@@ -9,6 +9,7 @@ export interface User {
   phone?: string;
   role: UserRole;
   is_active: number;
+  two_factor_enabled?: number | boolean;
   created_at: string;
   updated_at: string;
 }

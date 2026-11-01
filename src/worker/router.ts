@@ -41,6 +41,12 @@ async function ensureDatabaseReady(db: DatabaseAdapter) {
       await db.exec(INITIAL_SCHEMA_SQL);
       console.log('[Shop da Cidade] D1 database initialized successfully with schema and seed data.');
     }
+
+    // Ensure 2FA columns exist in users table
+    try { await db.exec('ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER DEFAULT 0;'); } catch (_) {}
+    try { await db.exec('ALTER TABLE users ADD COLUMN two_factor_secret TEXT;'); } catch (_) {}
+    try { await db.exec('ALTER TABLE users ADD COLUMN two_factor_backup_codes TEXT;'); } catch (_) {}
+
     dbReady = true;
   } catch (err) {
     console.error('[Shop da Cidade] DB auto-init error:', err);
