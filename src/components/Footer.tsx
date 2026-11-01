@@ -1,14 +1,19 @@
-// Shop Carajás - Footer Component
+// Shop da Cidade - Footer Component
 import { Heart, Mail, MapPin, Phone, ShieldCheck, ShoppingBag, Sparkles } from 'lucide-react';
 import React from 'react';
+import { useSiteTheme } from '../context/ThemeContext';
 
 interface FooterProps {
   onNavigate: (view: string) => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+  const { settings } = useSiteTheme();
   return (
-    <footer className="bg-slate-950 text-slate-400 border-t border-slate-800 text-sm">
+    <footer 
+      style={{ backgroundColor: settings.secondary_color || '#0f172a' }}
+      className="text-slate-400 border-t border-slate-800 text-sm transition-colors"
+    >
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand Info */}
@@ -16,25 +21,24 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <div className="flex items-center gap-2.5">
               <img
                 src="/shop-da-cidade-logo-transparente.png"
-                alt="Shop da Cidade"
+                alt={settings.platform_name || "Shop da Cidade"}
                 className="h-12 w-auto max-w-[210px] object-contain drop-shadow"
               />
             </div>
             <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
-              O marketplace regional desenvolvido para conectar moradores, comércios locais,
-              prestadores de serviços e entregadores autônomos de Canaã dos Carajás — Pará.
+              {settings.site_tagline || 'O shopping virtual da sua cidade'}. Desenvolvido para conectar moradores, comércios locais, prestadores de serviços e entregadores autônomos de {settings.city_name || 'Canaã dos Carajás'} — {settings.city_state || 'PA'}.
             </p>
             <div className="flex items-center gap-2 text-xs text-slate-300">
-              <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Canaã dos Carajás, Pará • Fuso America/Belem</span>
+              <MapPin style={{ color: settings.primary_color || '#fdca04' }} className="w-4 h-4 shrink-0" />
+              <span>{settings.city_name || 'Canaã dos Carajás'}, {settings.city_state || 'PA'}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-300">
-              <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>WhatsApp Oficial: (94) 99123-4567</span>
+              <Phone style={{ color: settings.primary_color || '#fdca04' }} className="w-4 h-4 shrink-0" />
+              <span>WhatsApp Oficial: {settings.official_whatsapp || '(94) 99123-4567'}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-300">
-              <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>atendimento@shopdacidade.com.br</span>
+              <Mail style={{ color: settings.primary_color || '#fdca04' }} className="w-4 h-4 shrink-0" />
+              <span>{settings.official_email || 'atendimento@shopdacidade.com.br'}</span>
             </div>
           </div>
 

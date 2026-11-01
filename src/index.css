@@ -1,1 +1,44 @@
 @import "tailwindcss";
+
+:root {
+  --color-theme-primary: #fdca04;
+  --color-theme-secondary: #0f172a;
+  --color-theme-accent: #f59e0b;
+}
+
+/* Dynamic theme overrides to synchronize colors with Super Admin customizer */
+.theme-primary-bg,
+.bg-amber-400,
+.bg-amber-500 {
+  background-color: var(--color-theme-primary) !important;
+}
+
+.theme-primary-text,
+.text-amber-400,
+.text-amber-500 {
+  color: var(--color-theme-primary) !important;
+}
+
+.theme-primary-border,
+.border-amber-400,
+.border-amber-500 {
+  border-color: var(--color-theme-primary) !important;
+}
+
+.hover\:bg-amber-500:hover,
+.hover\:bg-amber-600:hover {
+  background-color: var(--color-theme-accent, var(--color-theme-primary)) !important;
+}
+
+.theme-secondary-bg,
+.bg-slate-900 {
+  background-color: var(--color-theme-secondary) !important;
+}
+
+.bg-slate-950 {
+  background-color: color-mix(in srgb, var(--color-theme-secondary) 85%, black 15%) !important;
+}
+
+.border-slate-800 {
+  border-color: color-mix(in srgb, var(--color-theme-secondary) 70%, white 30%) !important;
+}

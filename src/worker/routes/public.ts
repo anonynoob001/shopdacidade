@@ -47,12 +47,22 @@ export async function handlePublicRoutes(req: { method: string; path: string; qu
         'site_tagline',
         'city_name',
         'city_state',
+        'primary_color',
+        'secondary_color',
+        'accent_color',
+        'theme_color_primary',
+        'theme_color_secondary',
+        'official_whatsapp',
+        'official_email',
         'contact_whatsapp',
         'contact_email',
         'contact_address',
+        'banner_notice',
+        'banner_notice_active',
         'default_commission_rate',
-        'theme_color_primary',
-        'theme_color_secondary',
+        'demo_mode_enabled',
+        'pix_key',
+        'pix_beneficiary',
         'announcement_text',
         'maintenance_mode'
       ]);
@@ -212,9 +222,35 @@ export async function handlePublicRoutes(req: { method: string; path: string; qu
   if (method === 'GET' && path === '/api/public/settings') {
     try {
       const { results } = await db.prepare('SELECT key, value FROM platform_settings').all();
+      const PUBLIC_ALLOWED = new Set([
+        'platform_name',
+        'site_tagline',
+        'city_name',
+        'city_state',
+        'primary_color',
+        'secondary_color',
+        'accent_color',
+        'theme_color_primary',
+        'theme_color_secondary',
+        'official_whatsapp',
+        'official_email',
+        'contact_whatsapp',
+        'contact_email',
+        'contact_address',
+        'banner_notice',
+        'banner_notice_active',
+        'default_commission_rate',
+        'demo_mode_enabled',
+        'pix_key',
+        'pix_beneficiary',
+        'announcement_text',
+        'maintenance_mode'
+      ]);
       const settingsObj: Record<string, string> = {};
       for (const row of (results as any[])) {
-        settingsObj[row.key] = row.value;
+        if (PUBLIC_ALLOWED.has(row.key)) {
+          settingsObj[row.key] = row.value;
+        }
       }
       return { status: 200, data: { settings: settingsObj } };
     } catch {

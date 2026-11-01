@@ -45,22 +45,6 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSiteTheme } from '../context/ThemeContext';
 import { apiRequest, formatBRL, formatDateBR } from '../services/api';
-import {
-  CloudflareConfig,
-  DatabaseStatsResponse,
-  executeD1Query,
-  fetchDatabaseStats,
-  getCloudflareD1SchemaSQL,
-  getCloudflareWranglerCommands,
-  getSavedCloudflareConfig,
-  saveCloudflareConfig
-} from '../services/cloudflare';
-import {
-  getSavedSupabaseConfig,
-  getSupabaseSchemaSQL,
-  saveSupabaseConfig,
-  testSupabaseConnection
-} from '../services/supabase';
 import { AuditLog, PromotionalBanner, ServiceProvider, Store as StoreType, User } from '../worker/types';
 
 interface AdminDashboardProps {
@@ -111,7 +95,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   const [bannersList, setBannersList] = useState<PromotionalBanner[]>([]);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [activeTab, setActiveTab] = useState<'kpis' | 'users' | 'stores' | 'providers' | 'settings' | 'cloudflare' | 'supabase' | 'banners' | 'logs' | 'asaas'>('kpis');
+  const [activeTab, setActiveTab] = useState<'kpis' | 'settings' | 'asaas' | 'stores' | 'users' | 'providers' | 'banners' | 'logs'>('kpis');
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsSaveSuccess, setSettingsSaveSuccess] = useState(false);
@@ -137,29 +121,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     pixCode: string;
     pixQrCodeUrl?: string;
   } | null>(null);
-
-  // Cloudflare D1 Integration state
-  const savedCf = getSavedCloudflareConfig();
-  const [cfDatabaseId, setCfDatabaseId] = useState(savedCf.databaseId);
-  const [cfDatabaseName, setCfDatabaseName] = useState(savedCf.databaseName);
-  const [cfAccountId, setCfAccountId] = useState(savedCf.accountId);
-  const [cfR2Bucket, setCfR2Bucket] = useState(savedCf.r2Bucket);
-  const [cfStats, setCfStats] = useState<DatabaseStatsResponse | null>(null);
-  const [isLoadingCfStats, setIsLoadingCfStats] = useState(false);
-  const [cfQuery, setCfQuery] = useState('SELECT id, name, slug, status, theme_color_primary, is_open FROM stores LIMIT 5;');
-  const [isExecutingQuery, setIsExecutingQuery] = useState(false);
-  const [queryResult, setQueryResult] = useState<{ columns: string[]; rows: any[]; rowCount: number; latencyMs: number; error?: string } | null>(null);
-  const [copiedSql, setCopiedSql] = useState(false);
-  const [copiedCommands, setCopiedCommands] = useState(false);
-  const [isSettingUpD1, setIsSettingUpD1] = useState(false);
-
-  // Supabase Integration state
-  const savedSb = getSavedSupabaseConfig();
-  const [supabaseUrl, setSupabaseUrl] = useState(savedSb.url);
-  const [supabaseAnonKey, setSupabaseAnonKey] = useState(savedSb.anonKey);
-  const [isTestingSupabase, setIsTestingSupabase] = useState(false);
-  const [supabaseTestResult, setSupabaseTestResult] = useState<{ success: boolean; message: string; latencyMs?: number } | null>(null);
-  const [copiedSupabaseSql, setCopiedSupabaseSql] = useState(false);
 
   // Banner modal
   const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
@@ -328,18 +289,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
       setSettings(setRes.settings || {});
       setAuditLogs(logsRes.logs || []);
 
-      if (setRes.settings?.cloudflare_database_id && !cfDatabaseId) {
-        setCfDatabaseId(setRes.settings.cloudflare_database_id);
-      }
-      if (setRes.settings?.cloudflare_database_name && !cfDatabaseName) {
-        setCfDatabaseName(setRes.settings.cloudflare_database_name);
-      }
-      if (setRes.settings?.cloudflare_account_id && !cfAccountId) {
-        setCfAccountId(setRes.settings.cloudflare_account_id);
-      }
-      if (setRes.settings?.cloudflare_r2_bucket && !cfR2Bucket) {
-        setCfR2Bucket(setRes.settings.cloudflare_r2_bucket);
-      }
 
       // Load Asaas configuration
       try {
@@ -485,150 +434,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     }
   };
 
-  const loadCloudflareStats = async () => {
-    setIsLoadingCfStats(true);
-    try {
-      const stats = await fetchDatabaseStats();
-      setCfStats(stats);
-    } catch (err: any) {
-      console.error('Failed to fetch D1 stats:', err);
-    } finally {
-      setIsLoadingCfStats(false);
-    }
-  };
 
-  useEffect(() => {
-    if (activeTab === 'cloudflare') {
-      loadCloudflareStats();
-    }
-  }, [activeTab]);
 
-  const handleSaveCloudflareConfig = async () => {
-    saveCloudflareConfig({
-      databaseId: cfDatabaseId.trim(),
-      databaseName: cfDatabaseName.trim(),
-      accountId: cfAccountId.trim(),
-      r2Bucket: cfR2Bucket.trim()
-    });
 
-    try {
-      await apiRequest('/api/admin/settings', {
-        method: 'POST',
-        body: JSON.stringify({
-          cloudflare_database_id: cfDatabaseId.trim(),
-          cloudflare_database_name: cfDatabaseName.trim(),
-          cloudflare_account_id: cfAccountId.trim(),
-          cloudflare_r2_bucket: cfR2Bucket.trim()
-        })
-      });
-      alert('Configurações do Cloudflare D1 e R2 salvas com sucesso!');
-      await loadCloudflareStats();
-    } catch {
-      alert('Configurações salvas localmente no navegador!');
-    }
-  };
-
-  const handleSetupD1 = async () => {
-    if (!confirm('Deseja inicializar todas as 25 tabelas e carregar os dados padrão (lojas, produtos, prestadores e configurações) no Cloudflare D1?')) return;
-    setIsSettingUpD1(true);
-    try {
-      const res = await apiRequest<{ message?: string }>('/api/public/setup-db', { method: 'POST' });
-      alert(res.message || 'Banco D1 inicializado com sucesso!');
-      await loadCloudflareStats();
-      await loadAdminData();
-    } catch (err: any) {
-      alert(err?.message || 'Falha ao inicializar banco D1.');
-    } finally {
-      setIsSettingUpD1(false);
-    }
-  };
-
-  const handleSaveSupabase = async () => {
-    saveSupabaseConfig(supabaseUrl.trim(), supabaseAnonKey.trim());
-    alert('Configurações do Supabase salvas com sucesso!');
-    handleTestSupabase();
-  };
-
-  const handleTestSupabase = async () => {
-    if (!supabaseUrl.trim() || !supabaseAnonKey.trim()) {
-      alert('Preencha a URL e a Anon Key do Supabase primeiro.');
-      return;
-    }
-    setIsTestingSupabase(true);
-    try {
-      const res = await testSupabaseConnection(supabaseUrl.trim(), supabaseAnonKey.trim());
-      setSupabaseTestResult(res);
-    } catch (err: any) {
-      setSupabaseTestResult({
-        success: false,
-        message: err?.message || 'Falha ao testar conexão com o Supabase'
-      });
-    } finally {
-      setIsTestingSupabase(false);
-    }
-  };
-
-  const handleCopySupabaseSQL = () => {
-    const sql = getSupabaseSchemaSQL();
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(sql);
-      setCopiedSupabaseSql(true);
-      setTimeout(() => setCopiedSupabaseSql(false), 2500);
-    }
-  };
-
-  const handleExecuteQuery = async () => {
-    if (!cfQuery.trim()) return;
-    setIsExecutingQuery(true);
-    try {
-      const res = await executeD1Query(cfQuery.trim());
-      setQueryResult(res);
-      if (res.success) {
-        // Refresh stats if non-select mutation occurred
-        if (!/^SELECT\b/i.test(cfQuery.trim())) {
-          await loadCloudflareStats();
-        }
-      }
-    } catch (err: any) {
-      setQueryResult({
-        columns: ['error'],
-        rows: [],
-        rowCount: 0,
-        latencyMs: 0,
-        error: err?.message || 'Falha ao executar query'
-      });
-    } finally {
-      setIsExecutingQuery(false);
-    }
-  };
-
-  const handleCopyCommands = () => {
-    const cmds = getCloudflareWranglerCommands({
-      databaseId: cfDatabaseId,
-      databaseName: cfDatabaseName,
-      accountId: cfAccountId,
-      r2Bucket: cfR2Bucket,
-      apiToken: '',
-      environment: 'production'
-    });
-
-    const fullText = `# Comandos Cloudflare Wrangler - Shop da Cidade\n# 1. Criar banco D1 no Cloudflare\n${cmds.createDb}\n\n# 2. Criar bucket R2 para fotos e mídias\n${cmds.r2Create}\n\n# 3. Aplicar migrações D1 remotas\n${cmds.applyMigrations}\n\n# 4. Testar query remota no D1\n${cmds.testQuery}\n\n# 5. Build e Deploy na Cloudflare Edge\n${cmds.deploy}`;
-
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(fullText);
-      setCopiedCommands(true);
-      setTimeout(() => setCopiedCommands(false), 2500);
-    }
-  };
-
-  const handleCopyD1SQL = () => {
-    const ddl = getCloudflareD1SchemaSQL();
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(ddl);
-      setCopiedSql(true);
-      setTimeout(() => setCopiedSql(false), 2500);
-    }
-  };
 
   const handleCreateBanner = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -691,7 +499,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
               Shop da Cidade
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">Gestão de Lojas, Usuários, Cores do Site e Banco de Dados Cloudflare D1</p>
+          <p className="text-xs text-slate-500 mt-0.5">Gestão Central de Lojas, Prestadores, Usuários, Taxas e Visual do Marketplace</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -728,25 +536,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           Personalização & Cores do Site
         </button>
 
-        <button
-          onClick={() => setActiveTab('cloudflare')}
-          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'cloudflare' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
-          }`}
-        >
-          <Database className="w-4 h-4 text-amber-500" />
-          Banco Cloudflare (D1 & R2)
-        </button>
 
-        <button
-          onClick={() => setActiveTab('supabase')}
-          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'supabase' ? 'border-emerald-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
-          }`}
-        >
-          <Database className="w-4 h-4 text-emerald-600" />
-          Banco Supabase (PostgreSQL & 2FA)
-        </button>
 
         <button
           onClick={() => setActiveTab('asaas')}
@@ -865,14 +655,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                     key={t.name}
                     type="button"
                     onClick={() => {
-                      setSettings({
-                        ...settings,
+                      const newColors = {
                         primary_color: t.primary,
                         secondary_color: t.secondary,
                         accent_color: t.accent
-                      });
+                      };
+                      setSettings(prev => ({
+                        ...prev,
+                        ...newColors
+                      }));
+                      updateSettingsState(newColors);
                     }}
-                    className="p-3 rounded-2xl border border-slate-200 hover:border-slate-400 text-left flex items-center gap-3 transition cursor-pointer bg-slate-50"
+                    className="p-3 rounded-2xl border border-slate-200 hover:border-slate-400 text-left flex items-center gap-3 transition cursor-pointer bg-slate-50 hover:bg-white"
                   >
                     <div className="flex -space-x-1.5 shrink-0">
                       <span style={{ backgroundColor: t.primary }} className="w-5 h-5 rounded-full border-2 border-white shadow-xs" />
@@ -888,54 +682,78 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             {/* Custom Color Pickers */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Cor Primária (Ouro/Marca)</label>
+                <label className="block font-bold text-slate-700 mb-1">Cor Primária (Destaques/Botões)</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={settings['primary_color'] || '#fdca04'}
-                    onChange={e => setSettings({ ...settings, primary_color: e.target.value })}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSettings(prev => ({ ...prev, primary_color: val }));
+                      updateSettingsState({ primary_color: val });
+                    }}
                     className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5"
                   />
                   <input
                     type="text"
                     value={settings['primary_color'] || '#fdca04'}
-                    onChange={e => setSettings({ ...settings, primary_color: e.target.value })}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSettings(prev => ({ ...prev, primary_color: val }));
+                      updateSettingsState({ primary_color: val });
+                    }}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Cor Secundária (Fundo Escuro)</label>
+                <label className="block font-bold text-slate-700 mb-1">Cor Secundária (Cabeçalho/Fundo Escuro)</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={settings['secondary_color'] || '#0f172a'}
-                    onChange={e => setSettings({ ...settings, secondary_color: e.target.value })}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSettings(prev => ({ ...prev, secondary_color: val }));
+                      updateSettingsState({ secondary_color: val });
+                    }}
                     className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5"
                   />
                   <input
                     type="text"
                     value={settings['secondary_color'] || '#0f172a'}
-                    onChange={e => setSettings({ ...settings, secondary_color: e.target.value })}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSettings(prev => ({ ...prev, secondary_color: val }));
+                      updateSettingsState({ secondary_color: val });
+                    }}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Cor de Acento (Âmbar/Realce)</label>
+                <label className="block font-bold text-slate-700 mb-1">Cor de Acento (Hover/Realce)</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={settings['accent_color'] || '#f59e0b'}
-                    onChange={e => setSettings({ ...settings, accent_color: e.target.value })}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSettings(prev => ({ ...prev, accent_color: val }));
+                      updateSettingsState({ accent_color: val });
+                    }}
                     className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5"
                   />
                   <input
                     type="text"
                     value={settings['accent_color'] || '#f59e0b'}
-                    onChange={e => setSettings({ ...settings, accent_color: e.target.value })}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSettings(prev => ({ ...prev, accent_color: val }));
+                      updateSettingsState({ accent_color: val });
+                    }}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase"
                   />
                 </div>
@@ -1401,563 +1219,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
       </div>
     )}
 
-      {/* TAB: CLOUDFLARE D1 INTEGRATION */}
-      {activeTab === 'cloudflare' && (
-        <div className="space-y-6 max-w-4xl text-xs animate-in fade-in duration-200">
-          {/* Main Status & Configuration Card */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-              <div>
-                <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black uppercase tracking-wider">
-                  Cloudflare D1 • Edge SQL Database
-                </span>
-                <h3 className="text-xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2">
-                  <Database className="w-5 h-5 text-amber-500" />
-                  Banco de Dados Cloudflare (D1 & R2)
-                </h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  O Shop da Cidade foi projetado nativamente para a infraestrutura da <strong>Cloudflare</strong>. O <strong>Cloudflare D1</strong> é um banco de dados SQL relacional distribuído mundialmente na borda (edge), sem custos de egress e com performance instantânea.
-                </p>
-              </div>
 
-              <div className="shrink-0 p-3 bg-amber-50 rounded-2xl border border-amber-200 text-slate-900 text-center font-bold text-[11px] min-w-[140px]">
-                <Server className="w-5 h-5 mx-auto mb-1 text-amber-600" />
-                <span className="block font-black text-amber-900">
-                  {cfStats ? 'D1 Conectado' : 'Carregando...'}
-                </span>
-                <span className="text-[10px] text-slate-500">
-                  {cfStats ? `${cfStats.latencyMs}ms de latência` : 'Binding DB'}
-                </span>
-              </div>
-            </div>
 
-            {/* Live Database Status Overview */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                <span className="text-[10px] font-bold text-slate-400 block uppercase">Motor do Banco</span>
-                <strong className="text-xs text-slate-900 block mt-0.5 font-black truncate">Cloudflare D1 / SQLite</strong>
-              </div>
-              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                <span className="text-[10px] font-bold text-slate-400 block uppercase">Binding no Worker</span>
-                <strong className="text-xs text-slate-900 block mt-0.5 font-black font-mono">env.DB</strong>
-              </div>
-              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                <span className="text-[10px] font-bold text-slate-400 block uppercase">Total de Registros</span>
-                <strong className="text-xs text-amber-600 block mt-0.5 font-black">
-                  {cfStats ? cfStats.totalRecords.toLocaleString() : '...'} linhas
-                </strong>
-              </div>
-              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                <span className="text-[10px] font-bold text-slate-400 block uppercase">Tabelas Ativas</span>
-                <strong className="text-xs text-emerald-600 block mt-0.5 font-black">
-                  {cfStats ? `${cfStats.tables.length} tabelas` : '18 tabelas'}
-                </strong>
-              </div>
-            </div>
 
-            {/* Live Tables Count Badge Grid */}
-            {cfStats && cfStats.tables.length > 0 && (
-              <div className="pt-2">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-slate-700 text-xs">Tabelas no Cloudflare D1:</span>
-                  <button
-                    type="button"
-                    onClick={loadCloudflareStats}
-                    disabled={isLoadingCfStats}
-                    className="text-[11px] text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1 cursor-pointer"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${isLoadingCfStats ? 'animate-spin' : ''}`} />
-                    Atualizar contagens
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {cfStats.tables.map(tbl => (
-                    <div
-                      key={tbl.name}
-                      onClick={() => setCfQuery(`SELECT * FROM ${tbl.name} LIMIT 10;`)}
-                      className="p-2 rounded-xl bg-white border border-slate-200 hover:border-amber-400 cursor-pointer transition flex items-center justify-between"
-                      title={`Clique para inspecionar SELECT * FROM ${tbl.name}`}
-                    >
-                      <span className="font-mono text-[11px] text-slate-700 truncate">{tbl.name}</span>
-                      <span className="px-1.5 py-0.5 rounded-md bg-slate-100 font-bold text-[10px] text-slate-600 shrink-0 ml-1">
-                        {tbl.count}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* Configuration Inputs */}
-            <div className="pt-4 border-t border-slate-200 space-y-4">
-              <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-amber-500" />
-                Configurações do Cloudflare D1 e R2
-              </h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Nome do Banco D1 (database_name)
-                  </label>
-                  <input
-                    type="text"
-                    value={cfDatabaseName}
-                    onChange={e => setCfDatabaseName(e.target.value)}
-                    placeholder="shop_cidade_db"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-amber-500"
-                  />
-                  <span className="text-[11px] text-slate-400 mt-1 block">
-                    Nome definido em <strong>wrangler.jsonc</strong>.
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    ID do Banco D1 (database_id)
-                  </label>
-                  <input
-                    type="text"
-                    value={cfDatabaseId}
-                    onChange={e => setCfDatabaseId(e.target.value)}
-                    placeholder="ex: 4a2b919d-7f55-4428-b8ce-e55502a3562a"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-amber-500"
-                  />
-                  <span className="text-[11px] text-slate-400 mt-1 block">
-                    Gerado pelo comando <code>wrangler d1 create</code>.
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Cloudflare Account ID (Opcional)
-                  </label>
-                  <input
-                    type="text"
-                    value={cfAccountId}
-                    onChange={e => setCfAccountId(e.target.value)}
-                    placeholder="ex: 8f0293da2780e9812bc879a9"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-amber-500"
-                  />
-                  <span className="text-[11px] text-slate-400 mt-1 block">
-                    Encontrado no painel do Cloudflare (lado direito do Dashboard).
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Bucket R2 para Fotos e Mídias (r2_buckets)
-                  </label>
-                  <input
-                    type="text"
-                    value={cfR2Bucket}
-                    onChange={e => setCfR2Bucket(e.target.value)}
-                    placeholder="shop-cidade-media"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-amber-500"
-                  />
-                  <span className="text-[11px] text-slate-400 mt-1 block">
-                    Armazenamento de logos, fotos de produtos e banners sem custo de saída.
-                  </span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleSaveCloudflareConfig}
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-xs cursor-pointer"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Salvar Configurações do Cloudflare</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={loadCloudflareStats}
-                  disabled={isLoadingCfStats}
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingCfStats ? 'animate-spin' : ''}`} />
-                  <span>{isLoadingCfStats ? 'Verificando...' : 'Testar Conexão D1'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleSetupD1}
-                  disabled={isSettingUpD1}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
-                >
-                  <Database className={`w-3.5 h-3.5 ${isSettingUpD1 ? 'animate-spin' : ''}`} />
-                  <span>{isSettingUpD1 ? 'Criando tabelas no D1...' : 'Inicializar Tabelas & Lojas no D1'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Interactive SQL Console (Cloudflare D1 Query Runner) */}
-            <div className="pt-6 border-t border-slate-200 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
-                    <Terminal className="w-4 h-4 text-amber-500" />
-                    Console SQL Interativo do Cloudflare D1
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    Execute consultas SQL diretamente no banco de dados para inspecionar lojas, pedidos e tabelas.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setCfQuery('SELECT id, name, slug, status, theme_color_primary FROM stores;')}
-                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] cursor-pointer"
-                  >
-                    Ver Lojas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCfQuery('SELECT * FROM platform_settings;')}
-                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] cursor-pointer"
-                  >
-                    Ver Configs
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCfQuery('SELECT id, name, email, role FROM users LIMIT 10;')}
-                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] cursor-pointer"
-                  >
-                    Ver Usuários
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <textarea
-                  rows={3}
-                  value={cfQuery}
-                  onChange={e => setCfQuery(e.target.value)}
-                  placeholder="Ex: SELECT * FROM stores LIMIT 5;"
-                  className="w-full px-3.5 py-2.5 bg-slate-950 text-emerald-400 font-mono text-xs rounded-xl border border-slate-800 focus:outline-none focus:border-amber-500"
-                />
-
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">
-                    Dica: Suporta queries SELECT, INSERT, UPDATE e comandos SQLite D1.
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleExecuteQuery}
-                    disabled={isExecutingQuery || !cfQuery.trim()}
-                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
-                  >
-                    <Terminal className={`w-3.5 h-3.5 ${isExecutingQuery ? 'animate-pulse' : ''}`} />
-                    <span>{isExecutingQuery ? 'Executando...' : 'Executar no D1'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Query Result Viewer */}
-              {queryResult && (
-                <div className="mt-3 p-3 bg-slate-950 text-slate-200 rounded-2xl border border-slate-800 space-y-2 font-mono text-xs overflow-hidden">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pb-1 border-b border-slate-800">
-                    <span>
-                      Resultado: <strong className="text-white">{queryResult.rowCount}</strong> linha(s)
-                    </span>
-                    <span className="text-emerald-400">{queryResult.latencyMs}ms</span>
-                  </div>
-
-                  {queryResult.error ? (
-                    <div className="p-3 bg-rose-950/60 border border-rose-800 rounded-xl text-rose-300">
-                      <strong>Erro:</strong> {queryResult.error}
-                    </div>
-                  ) : queryResult.rows.length === 0 ? (
-                    <div className="py-4 text-center text-slate-500 text-xs">
-                      Nenhum registro retornado.
-                    </div>
-                  ) : (
-                    <div className="max-h-60 overflow-x-auto overflow-y-auto no-scrollbar">
-                      <table className="w-full text-left border-collapse text-[11px]">
-                        <thead>
-                          <tr className="border-b border-slate-800 text-amber-400">
-                            {queryResult.columns.map(col => (
-                              <th key={col} className="p-2 whitespace-nowrap font-bold">
-                                {col}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {queryResult.rows.map((row, idx) => (
-                            <tr key={idx} className="border-b border-slate-900 hover:bg-slate-900/60">
-                              {queryResult.columns.map(col => (
-                                <td key={col} className="p-2 whitespace-nowrap text-slate-300 max-w-xs truncate">
-                                  {typeof row[col] === 'object'
-                                    ? JSON.stringify(row[col])
-                                    : String(row[col] ?? 'null')}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Cloudflare Wrangler CLI Deployment Box */}
-            <div className="pt-6 border-t border-slate-200 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
-                    <Server className="w-4 h-4 text-amber-500" />
-                    Comandos Prontos do Cloudflare Wrangler CLI
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    Use o terminal para criar o banco D1, aplicar migrações e publicar em produção na Cloudflare.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleCopyCommands}
-                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0"
-                  >
-                    {copiedCommands ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    <span>{copiedCommands ? 'Comandos Copiados!' : 'Copiar Comandos'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleCopyD1SQL}
-                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0"
-                  >
-                    {copiedSql ? <Check className="w-4 h-4" /> : <FileCode className="w-4 h-4" />}
-                    <span>{copiedSql ? 'SQL Completo Copiado!' : 'Copiar SQL Completo (Tabelas + Lojas)'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Special Guide for Cloudflare Pages */}
-              <div className="p-4 rounded-2xl bg-blue-50/80 border border-blue-200 text-xs text-blue-950 space-y-2">
-                <strong className="text-blue-900 block font-black text-sm flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-500 inline-block animate-ping" />
-                  Passo a Passo para o Cloudflare Pages (shopdacidade.pages.dev):
-                </strong>
-                <ol className="list-decimal pl-4 space-y-1.5 text-[11px] leading-relaxed">
-                  <li>
-                    <strong>Vincular o Banco no Pages:</strong> No painel da Cloudflare, acesse <strong>Workers & Pages</strong> &rarr; clique no seu projeto (<strong>shopdacidade</strong>) &rarr; aba <strong>Settings</strong> &rarr; menu lateral <strong>Functions</strong> &rarr; role até <strong>D1 Database Bindings</strong>.
-                  </li>
-                  <li>
-                    <strong>Adicionar Binding:</strong> Clique em <strong>Add binding</strong> com Nome da variável: <code className="bg-blue-100 px-1 py-0.5 rounded font-bold font-mono">DB</code> (em maiúsculo) e selecione seu banco D1 (<code className="bg-blue-100 px-1 py-0.5 rounded font-mono">shop_cidade_db</code>). Clique em <strong>Save</strong>.
-                  </li>
-                  <li>
-                    <strong>Executar o SQL Completo:</strong> Acesse <strong>Workers & Pages</strong> &rarr; <strong>D1</strong> &rarr; clique em <code className="bg-blue-100 px-1 py-0.5 rounded font-mono">shop_cidade_db</code> &rarr; aba <strong>Console</strong> &rarr; cole o script gerado pelo botão <strong>"Copiar SQL Completo"</strong> acima e clique em <strong>Execute</strong>.
-                  </li>
-                  <li>
-                    <strong>Reimplantar:</strong> Na aba <strong>Deployments</strong> do Cloudflare Pages, clique em <strong>Retry deployment</strong> no último build para o vínculo do banco entrar em vigor.
-                  </li>
-                </ol>
-              </div>
-
-              {/* Code snippet display */}
-              <div className="p-4 rounded-2xl bg-slate-950 text-slate-300 font-mono text-[11px] max-h-56 overflow-y-auto border border-slate-800 space-y-1.5">
-                <span className="text-amber-400 font-bold block"># 1. Criar o Banco D1 na sua conta Cloudflare:</span>
-                <p className="text-emerald-400 pl-2">npx wrangler d1 create {cfDatabaseName || 'shop_cidade_db'}</p>
-                <span className="text-slate-500 text-[10px] pl-2 block">↳ ID configurado: {cfDatabaseId || '0eb867f7-6f43-4f77-8a60-0867fbd7cbc0'}</span>
-
-                <span className="text-amber-400 font-bold block pt-1"># 2. Criar o Bucket R2 para fotos e mídias:</span>
-                <p className="text-emerald-400 pl-2">npx wrangler r2 bucket create {cfR2Bucket || 'shop-cidade-media'}</p>
-
-                <span className="text-amber-400 font-bold block pt-1"># 3. Aplicar as migrações (tabelas e dados iniciais) no Cloudflare D1 remoto:</span>
-                <p className="text-emerald-400 pl-2">npx wrangler d1 migrations apply {cfDatabaseName || 'shop_cidade_db'} --remote</p>
-
-                <span className="text-amber-400 font-bold block pt-1"># 4. Publicar a aplicação na borda da Cloudflare:</span>
-                <p className="text-emerald-400 pl-2">npm run build && npx wrangler deploy</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB: SUPABASE INTEGRATION */}
-      {activeTab === 'supabase' && (
-        <div className="space-y-6 max-w-4xl text-xs animate-in fade-in duration-200">
-          {/* Main Status & Configuration Card */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-              <div>
-                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-black uppercase tracking-wider">
-                  Supabase • PostgreSQL Cloud Database & 2FA
-                </span>
-                <h3 className="text-xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2">
-                  <Database className="w-5 h-5 text-emerald-600" />
-                  Banco de Dados Supabase (PostgreSQL & 2FA)
-                </h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Conecte seu projeto do <strong>Supabase</strong> para ter um banco de dados relacional <strong>PostgreSQL</strong> completo com painel visual estilo planilha, suporte nativo a <strong>Autenticação com 2FA (Google Authenticator)</strong> e 1 GB de armazenamento grátis para fotos de produtos e lojas.
-                </p>
-              </div>
-
-              <div className="shrink-0 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-slate-900 text-center font-bold text-[11px] min-w-[150px]">
-                <Database className="w-5 h-5 mx-auto mb-1 text-emerald-600" />
-                <span className="block font-black text-slate-900">
-                  {supabaseUrl ? 'Supabase Configurado' : 'Pendente'}
-                </span>
-                <span className="text-[10px] text-slate-500">
-                  {supabaseTestResult?.success ? 'Conexão Ativa' : 'Aguardando Teste'}
-                </span>
-              </div>
-            </div>
-
-            {/* Live Status Feedback */}
-            {supabaseTestResult && (
-              <div
-                className={`p-4 rounded-2xl border text-xs font-bold flex items-center gap-3 ${
-                  supabaseTestResult.success
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                    : 'bg-rose-50 border-rose-200 text-rose-900'
-                }`}
-              >
-                {supabaseTestResult.success ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
-                )}
-                <div>
-                  <p>{supabaseTestResult.message}</p>
-                  {supabaseTestResult.latencyMs && (
-                    <span className="text-[10px] opacity-75 font-mono">
-                      Tempo de resposta: {supabaseTestResult.latencyMs}ms
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Inputs: URL and Anon Key */}
-            <div className="space-y-4 pt-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Project URL do Supabase (VITE_SUPABASE_URL)
-                  </label>
-                  <input
-                    type="url"
-                    value={supabaseUrl}
-                    onChange={e => setSupabaseUrl(e.target.value)}
-                    placeholder="https://xyzproject.supabase.co"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-emerald-500"
-                  />
-                  <span className="text-[11px] text-slate-400 mt-1 block">
-                    Encontrado em: <strong>Project Settings &rarr; API &rarr; Project URL</strong>.
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Anon Public Key (VITE_SUPABASE_ANON_KEY)
-                  </label>
-                  <input
-                    type="password"
-                    value={supabaseAnonKey}
-                    onChange={e => setSupabaseAnonKey(e.target.value)}
-                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 focus:bg-white focus:border-emerald-500"
-                  />
-                  <span className="text-[11px] text-slate-400 mt-1 block">
-                    Chave pública segura para acesso no navegador (chave <code>anon public</code>).
-                  </span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleSaveSupabase}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-2 shadow-xs cursor-pointer"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Salvar Credenciais do Supabase</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleTestSupabase}
-                  disabled={isTestingSupabase || !supabaseUrl.trim()}
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isTestingSupabase ? 'animate-spin' : ''}`} />
-                  <span>{isTestingSupabase ? 'Testando Conexão...' : 'Testar Conexão com Supabase'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleCopySupabaseSQL}
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-xs cursor-pointer ml-auto"
-                >
-                  {copiedSupabaseSql ? <Check className="w-3.5 h-3.5" /> : <FileCode className="w-3.5 h-3.5" />}
-                  <span>{copiedSupabaseSql ? 'SQL Copiado com Sucesso!' : 'Copiar Script SQL do Supabase'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Step by step guide card */}
-            <div className="pt-6 border-t border-slate-200 space-y-3">
-              <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
-                <Shield className="w-4 h-4 text-emerald-600" />
-                Guia Rápido: Como Configurar o Supabase e o 2FA (Authenticator)
-              </h4>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-700">
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
-                  <span className="font-black text-slate-900 text-xs flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono text-[10px]">1</span>
-                    Criar o Projeto no Supabase
-                  </span>
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
-                    Acesse <strong>supabase.com</strong>, crie uma conta grátis e crie um novo projeto (ex: <code>shop-da-cidade</code>). Defina uma senha forte para o banco de dados.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
-                  <span className="font-black text-slate-900 text-xs flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono text-[10px]">2</span>
-                    Executar o Script SQL
-                  </span>
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
-                    Clique no botão <strong>"Copiar Script SQL do Supabase"</strong> acima. No painel do Supabase, clique no menu <strong>SQL Editor</strong> &rarr; <strong>New Query</strong>, cole o código e clique em <strong>Run</strong>. Todas as 15 tabelas, RLS e dados de Canaã serão criados!
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
-                  <span className="font-black text-slate-900 text-xs flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono text-[10px]">3</span>
-                    Copiar as Chaves de API
-                  </span>
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
-                    No Supabase, vá em <strong>Project Settings &rarr; API</strong>. Copie o <strong>Project URL</strong> e a chave <strong>anon public</strong> e cole nos campos acima.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 space-y-1.5">
-                  <span className="font-black text-emerald-950 text-xs flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-full bg-emerald-200 text-emerald-900 flex items-center justify-center font-mono text-[10px]">4</span>
-                    Ativar o 2FA (Authenticator App)
-                  </span>
-                  <p className="text-[11px] text-emerald-900 leading-relaxed">
-                    No painel do Supabase, vá em <strong>Authentication &rarr; Multi-Factor (MFA)</strong> e ative <strong>TOTP (Authenticator apps)</strong>. Os usuários poderão ativar o Google Authenticator ou Authy diretamente no perfil!
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       {activeTab === 'asaas' && (
         <div className="space-y-6 max-w-4xl text-xs animate-in fade-in duration-200">
           {/* Main Status & Configuration Card */}

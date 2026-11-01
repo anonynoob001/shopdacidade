@@ -56,7 +56,18 @@ const ThemeContext = createContext<ThemeContextType>({
 });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<SiteSettings>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('shop_site_theme_settings');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          return { ...DEFAULT_SETTINGS, ...parsed };
+        }
+      } catch {}
+    }
+    return DEFAULT_SETTINGS;
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   const applyThemeVariables = (s: SiteSettings) => {
@@ -74,28 +85,29 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const loadSettings = async () => {
     try {
       const res = await apiRequest<{ settings: Record<string, string> }>('/api/public/settings');
-      if (res && res.settings) {
+      if (res && res.settings && Object.keys(res.settings).length > 0) {
         const merged: SiteSettings = {
           ...DEFAULT_SETTINGS,
           ...res.settings
         };
         setSettings(merged);
         applyThemeVariables(merged);
+        try { localStorage.setItem('shop_site_theme_settings', JSON.stringify(merged)); } catch {}
       }
     } catch {
-      // Fallback to defaults or try initial-data
       try {
         const initRes = await apiRequest<{ settings: Record<string, string> }>('/api/public/initial-data');
-        if (initRes && initRes.settings) {
+        if (initRes && initRes.settings && Object.keys(initRes.settings).length > 0) {
           const merged: SiteSettings = {
             ...DEFAULT_SETTINGS,
             ...initRes.settings
           };
           setSettings(merged);
           applyThemeVariables(merged);
+          try { localStorage.setItem('shop_site_theme_settings', JSON.stringify(merged)); } catch {}
         }
       } catch {
-        applyThemeVariables(DEFAULT_SETTINGS);
+        applyThemeVariables(settings);
       }
     } finally {
       setIsLoading(false);
@@ -103,6 +115,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   useEffect(() => {
+    applyThemeVariables(settings);
     loadSettings();
   }, []);
 
@@ -110,6 +123,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSettings(prev => {
       const updated = { ...prev, ...newSettings };
       applyThemeVariables(updated);
+      try { localStorage.setItem('shop_site_theme_settings', JSON.stringify(updated)); } catch {}
       return updated;
     });
   };

@@ -56,10 +56,16 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="relative z-40 bg-slate-900 border-b border-slate-800 text-white shadow-md">
+    <header 
+      style={{ backgroundColor: settings.secondary_color || '#0f172a' }}
+      className="relative z-40 border-b border-slate-800 text-white shadow-md transition-colors"
+    >
       {/* Top Banner Notice (configured in Super Admin Panel) */}
       {settings.banner_notice && (
-        <div className="bg-amber-400 text-slate-950 font-bold px-4 py-1.5 text-center text-xs border-b border-amber-500/30 flex items-center justify-center gap-2 shadow-xs">
+        <div 
+          style={{ backgroundColor: settings.primary_color || '#fdca04' }}
+          className="text-slate-950 font-bold px-4 py-1.5 text-center text-xs flex items-center justify-center gap-2 shadow-xs transition-colors"
+        >
           <Megaphone className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">{settings.banner_notice}</span>
         </div>
@@ -128,7 +134,8 @@ export const Header: React.FC<HeaderProps> = ({
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <button
                 onClick={onSearchSubmit}
-                className="absolute right-1.5 top-1.5 px-3 py-1 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-lg text-xs font-black transition cursor-pointer shadow-xs"
+                style={{ backgroundColor: settings.primary_color || '#fdca04' }}
+                className="absolute right-1.5 top-1.5 px-3 py-1 text-slate-950 rounded-lg text-xs font-black transition cursor-pointer shadow-xs"
               >
                 Buscar
               </button>
@@ -172,7 +179,10 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <ShoppingBag className="w-5 h-5 text-emerald-400" />
               {totalItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-amber-500 text-slate-950 text-[10px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shadow">
+                <span 
+                  style={{ backgroundColor: settings.primary_color || '#fdca04' }}
+                  className="absolute -top-1 -right-1 text-slate-950 text-[10px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shadow"
+                >
                   {totalItemCount > 9 ? '9+' : totalItemCount}
                 </span>
               )}
@@ -275,7 +285,8 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <button
                 onClick={() => openAuthModal('login')}
-                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition active:scale-95 cursor-pointer"
+                style={{ backgroundColor: settings.primary_color || '#fdca04' }}
+                className="px-4 py-1.5 rounded-xl text-slate-950 text-xs font-black shadow-sm transition active:scale-95 cursor-pointer"
               >
                 Entrar
               </button>
@@ -300,12 +311,13 @@ export const Header: React.FC<HeaderProps> = ({
               onChange={e => onSearchChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Buscar em Canaã dos Carajás..."
-              className="w-full pl-9 pr-20 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+              className="w-full pl-9 pr-20 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <button
               onClick={onSearchSubmit}
-              className="absolute right-1 top-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium cursor-pointer"
+              style={{ backgroundColor: settings.primary_color || '#fdca04' }}
+              className="absolute right-1 top-1 px-3 py-1 text-slate-950 rounded-lg text-xs font-black cursor-pointer shadow-xs"
             >
               Ir
             </button>
