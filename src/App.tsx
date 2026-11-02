@@ -159,17 +159,21 @@ function ShopCidadeApp() {
     }
   };
 
+  const isStoreDetailPage = currentView === 'store-detail';
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
-      <Header
-        currentView={currentView}
-        onNavigate={handleNavigate}
-        selectedNeighborhood={selectedNeighborhood}
-        onSelectNeighborhood={setSelectedNeighborhood}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onSearchSubmit={handleSearchSubmit}
-      />
+      {!isStoreDetailPage && (
+        <Header
+          currentView={currentView}
+          onNavigate={handleNavigate}
+          selectedNeighborhood={selectedNeighborhood}
+          onSelectNeighborhood={setSelectedNeighborhood}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onSearchSubmit={handleSearchSubmit}
+        />
+      )}
 
       <main className="flex-1">
         {currentView === 'home' && (
@@ -241,7 +245,7 @@ function ShopCidadeApp() {
         )}
       </main>
 
-      <Footer onNavigate={handleNavigate} />
+      {!isStoreDetailPage && <Footer onNavigate={handleNavigate} />}
 
       <AuthModal />
 
