@@ -27,6 +27,9 @@ import {
   Share2,
   ShoppingBag,
   Sliders,
+  Camera,
+  Image as ImageIcon,
+  Sparkles,
   Store as StoreIcon,
   Trash2,
   TrendingUp,
@@ -34,7 +37,7 @@ import {
   Upload,
   X
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeDisplay } from '../components/QRCodeDisplay';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest, CANAA_NEIGHBORHOODS, formatBRL, formatDateBR } from '../services/api';
@@ -53,6 +56,66 @@ const COLOR_PRESETS = [
   { name: 'Roxo Moderno', primary: '#8b5cf6', secondary: '#2e1065' },
   { name: 'Dark Grafite', primary: '#38bdf8', secondary: '#020617' }
 ];
+
+const STORE_LOGO_PRESETS = [
+  { name: 'Mercado & Alimentos', url: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=300&h=300&fit=crop&q=80' },
+  { name: 'Hambúrguer & Lanches', url: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=300&h=300&fit=crop&q=80' },
+  { name: 'Farmácia & Saúde', url: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=300&h=300&fit=crop&q=80' },
+  { name: 'Construção & Tintas', url: 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=300&h=300&fit=crop&q=80' },
+  { name: 'Moda & Boutique', url: 'https://images.unsplash.com/photo-1544441893-675973e31985?w=300&h=300&fit=crop&q=80' },
+  { name: 'Eletrônicos & Games', url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300&h=300&fit=crop&q=80' },
+  { name: 'Ótica & Óculos', url: 'https://images.unsplash.com/photo-1591076482161-42ce6da69f67?w=300&h=300&fit=crop&q=80' },
+  { name: 'Móveis & Casa', url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=300&h=300&fit=crop&q=80' },
+  { name: 'Pizzaria & Delivery', url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&h=300&fit=crop&q=80' },
+  { name: 'Açougue & Carnes', url: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=300&h=300&fit=crop&q=80' }
+];
+
+const STORE_BANNER_PRESETS = [
+  { name: 'Supermercado Fresco', url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=450&fit=crop&q=80' },
+  { name: 'Materiais & Construção', url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&h=450&fit=crop&q=80' },
+  { name: 'Gastronomia & Lanches', url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&h=450&fit=crop&q=80' },
+  { name: 'Tecnologia & Informática', url: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=1200&h=450&fit=crop&q=80' },
+  { name: 'Moda & Vitrine', url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=450&fit=crop&q=80' },
+  { name: 'Móveis & Decoração', url: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&h=450&fit=crop&q=80' },
+  { name: 'Farmácia & Beleza', url: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=1200&h=450&fit=crop&q=80' },
+  { name: 'Padaria & Confeitaria', url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&h=450&fit=crop&q=80' }
+];
+
+function compressAndResizeImage(file: File, maxWidth: number, maxHeight: number, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate }) => {
   const { user, openAuthModal } = useAuth();
@@ -100,6 +163,14 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [saveSuccessNotice, setSaveSuccessNotice] = useState(false);
+
+  // Logo & Banner editing state
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const bannerInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [logoMode, setLogoMode] = useState<'upload' | 'presets' | 'url'>('upload');
+  const [bannerMode, setBannerMode] = useState<'upload' | 'presets' | 'url'>('upload');
 
   const loadMerchantData = async () => {
     setIsLoading(true);
@@ -479,6 +550,45 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
         </div>
       </div>
 
+      {/* Store Cover and Profile Badge Card */}
+      <div className="relative rounded-3xl overflow-hidden border border-slate-200 shadow-sm bg-slate-900">
+        <div className="h-32 sm:h-44 relative overflow-hidden bg-slate-950">
+          <img
+            src={store.banner_url || 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&h=400&fit=crop&q=80'}
+            alt="Capa da Loja"
+            className="w-full h-full object-cover opacity-75"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+        </div>
+        <div className="p-4 sm:px-6 -mt-10 sm:-mt-12 relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4 bg-slate-900/95 backdrop-blur-xs border-t border-white/5">
+          <div className="flex items-center gap-3.5">
+            <img
+              src={store.logo_url || 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=200&h=200&fit=crop&q=80'}
+              alt={store.name}
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-4 border-slate-900 shadow-xl bg-slate-800 shrink-0"
+            />
+            <div className="text-white space-y-0.5">
+              <span
+                style={{ backgroundColor: `${primaryTheme}25`, color: primaryTheme, borderColor: `${primaryTheme}50` }}
+                className="px-2.5 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-wider inline-block mb-0.5"
+              >
+                Loja Oficial
+              </span>
+              <h3 className="font-black text-base sm:text-lg leading-tight">{store.name}</h3>
+              <p className="text-xs text-slate-300">Foto de Perfil & Imagem de Capa Atuais</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('settings')}
+            className="self-start sm:self-auto px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-1.5 transition cursor-pointer shadow-md"
+          >
+            <Camera className="w-4 h-4" />
+            <span>Editar Fotos & Capa</span>
+          </button>
+        </div>
+      </div>
+
       {/* Tabs */}
       <div className="flex border-b border-slate-200 gap-2 sm:gap-4 text-xs font-bold text-slate-600 overflow-x-auto no-scrollbar">
         <button
@@ -527,8 +637,8 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
             activeTab === 'settings' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
           }`}
         >
-          <Palette className="w-4 h-4 text-amber-500" />
-          Personalização & Cores da Loja
+          <Camera className="w-4 h-4 text-amber-500" />
+          Fotos, Cores & Perfil da Loja
         </button>
       </div>
 
@@ -830,6 +940,349 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
             </div>
           )}
 
+          {/* Section: Store Profile & Cover Images */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-6">
+            <div className="flex items-center gap-2">
+              <Camera className="w-5 h-5 text-amber-500" />
+              <div>
+                <h3 className="text-base font-black text-slate-900 tracking-tight">Imagens da Loja: Foto de Perfil & Capa Superior</h3>
+                <p className="text-xs text-slate-500">
+                  Envie fotos do seu celular/computador, selecione modelos prontos de alta qualidade ou cole links para o logotipo e a fachada da sua loja.
+                </p>
+              </div>
+            </div>
+
+            {/* Hidden file inputs for Logo & Banner */}
+            <input
+              type="file"
+              ref={logoInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setIsUploadingLogo(true);
+                try {
+                  const resized = await compressAndResizeImage(file, 400, 400, 0.88);
+                  setSettingsForm(prev => ({ ...prev, logo_url: resized }));
+                } catch (err: any) {
+                  alert('Falha ao processar foto de perfil: ' + (err?.message || 'Erro'));
+                } finally {
+                  setIsUploadingLogo(false);
+                  if (e.target) e.target.value = '';
+                }
+              }}
+            />
+
+            <input
+              type="file"
+              ref={bannerInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setIsUploadingBanner(true);
+                try {
+                  const resized = await compressAndResizeImage(file, 1200, 480, 0.85);
+                  setSettingsForm(prev => ({ ...prev, banner_url: resized }));
+                } catch (err: any) {
+                  alert('Falha ao processar imagem de capa: ' + (err?.message || 'Erro'));
+                } finally {
+                  setIsUploadingBanner(false);
+                  if (e.target) e.target.value = '';
+                }
+              }}
+            />
+
+            {/* 1. FOTO DE PERFIL / LOGOTIPO */}
+            <div className="border border-slate-100 bg-slate-50/70 rounded-2xl p-4 sm:p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-600 font-black text-xs flex items-center justify-center">1</span>
+                  <label className="text-sm font-bold text-slate-900">Foto de Perfil / Logotipo da Loja</label>
+                </div>
+                <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 self-start sm:self-auto text-[11px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setLogoMode('upload')}
+                    className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${logoMode === 'upload' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    Enviar Foto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogoMode('presets')}
+                    className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${logoMode === 'presets' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    Modelos Prontos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogoMode('url')}
+                    className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${logoMode === 'url' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    Link (URL)
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                {/* Logo Preview Avatar */}
+                <div className="relative group shrink-0">
+                  <img
+                    src={settingsForm.logo_url || 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=300&h=300&fit=crop&q=80'}
+                    alt="Logo Preview"
+                    className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-md bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={isUploadingLogo}
+                    className="absolute inset-0 bg-black/40 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition cursor-pointer backdrop-blur-xs text-[10px] font-bold"
+                  >
+                    <Camera className="w-5 h-5 mb-1 text-amber-300" />
+                    <span>Alterar</span>
+                  </button>
+                </div>
+
+                <div className="flex-1 w-full space-y-2">
+                  {logoMode === 'upload' && (
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={isUploadingLogo}
+                        className="w-full py-2.5 px-4 rounded-xl bg-white border border-dashed border-amber-400 hover:border-amber-500 hover:bg-amber-50/50 text-slate-800 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs disabled:opacity-50"
+                      >
+                        <Upload className="w-4 h-4 text-amber-500" />
+                        <span>{isUploadingLogo ? 'Processando foto...' : 'Escolher Foto do Celular ou Computador'}</span>
+                      </button>
+                      <p className="text-[11px] text-slate-500 text-center sm:text-left">
+                        Recomendado: imagem quadrada (ex: 500x500px). JPG, PNG ou WebP.
+                      </p>
+                    </div>
+                  )}
+
+                  {logoMode === 'presets' && (
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-600 mb-1.5">Clique em um modelo comercial para sua loja:</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {STORE_LOGO_PRESETS.map((p) => (
+                          <button
+                            key={p.name}
+                            type="button"
+                            onClick={() => setSettingsForm({ ...settingsForm, logo_url: p.url })}
+                            className={`p-1.5 rounded-xl border text-left flex items-center gap-2 transition cursor-pointer bg-white ${
+                              settingsForm.logo_url === p.url ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <img src={p.url} alt={p.name} className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                            <span className="text-[10px] font-bold text-slate-800 truncate">{p.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {logoMode === 'url' && (
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600">Link direto da imagem (URL da internet):</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          value={settingsForm.logo_url}
+                          onChange={e => setSettingsForm({ ...settingsForm, logo_url: e.target.value })}
+                          placeholder="https://exemplo.com/minha-logo.png"
+                          className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+                        />
+                        {settingsForm.logo_url && (
+                          <button
+                            type="button"
+                            onClick={() => setSettingsForm({ ...settingsForm, logo_url: '' })}
+                            className="p-2 text-slate-400 hover:text-rose-500 transition cursor-pointer"
+                            title="Limpar link"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 2. IMAGEM DE CAPA / BANNER SUPERIOR */}
+            <div className="border border-slate-100 bg-slate-50/70 rounded-2xl p-4 sm:p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-600 font-black text-xs flex items-center justify-center">2</span>
+                  <label className="text-sm font-bold text-slate-900">Imagem de Capa Superior da Loja (Banner)</label>
+                </div>
+                <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 self-start sm:self-auto text-[11px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setBannerMode('upload')}
+                    className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${bannerMode === 'upload' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    Enviar Capa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBannerMode('presets')}
+                    className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${bannerMode === 'presets' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    Capas Prontas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBannerMode('url')}
+                    className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${bannerMode === 'url' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    Link (URL)
+                  </button>
+                </div>
+              </div>
+
+              {/* Banner Preview Frame */}
+              <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-xs bg-slate-900 group">
+                <div className="h-32 sm:h-44 relative overflow-hidden bg-slate-950">
+                  <img
+                    src={settingsForm.banner_url || 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&h=400&fit=crop&q=80'}
+                    alt="Banner Preview"
+                    className="w-full h-full object-cover opacity-80"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                </div>
+
+                <div className="absolute top-3 right-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => bannerInputRef.current?.click()}
+                    disabled={isUploadingBanner}
+                    className="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 backdrop-blur-xs transition cursor-pointer border border-white/20 shadow-xs"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{isUploadingBanner ? 'Carregando...' : 'Trocar Imagem de Capa'}</span>
+                  </button>
+                </div>
+
+                <div className="absolute bottom-3 left-3 text-white text-xs font-bold flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 text-[10px] font-black uppercase">
+                    Capa Ativa
+                  </span>
+                  <span className="text-[11px] text-slate-200 hidden sm:inline">Exibida no topo da sua página oficial</span>
+                </div>
+              </div>
+
+              {bannerMode === 'upload' && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => bannerInputRef.current?.click()}
+                    disabled={isUploadingBanner}
+                    className="w-full sm:w-auto py-2.5 px-5 rounded-xl bg-white border border-dashed border-amber-400 hover:border-amber-500 hover:bg-amber-50/50 text-slate-800 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs disabled:opacity-50"
+                  >
+                    <Camera className="w-4 h-4 text-amber-500" />
+                    <span>{isUploadingBanner ? 'Processando imagem...' : 'Escolher Capa do Celular ou Computador'}</span>
+                  </button>
+                  <p className="text-[11px] text-slate-500">
+                    Recomendado: imagem panorâmica retangular (ex: 1200x450px).
+                  </p>
+                </div>
+              )}
+
+              {bannerMode === 'presets' && (
+                <div>
+                  <p className="text-[11px] font-bold text-slate-600 mb-2">Selecione uma imagem de alta qualidade para a fachada da sua loja:</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {STORE_BANNER_PRESETS.map((p) => (
+                      <button
+                        key={p.name}
+                        type="button"
+                        onClick={() => setSettingsForm({ ...settingsForm, banner_url: p.url })}
+                        className={`rounded-xl overflow-hidden border text-left transition cursor-pointer group relative ${
+                          settingsForm.banner_url === p.url ? 'border-amber-500 ring-2 ring-amber-500/20 shadow-md' : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="h-16 relative overflow-hidden bg-slate-100">
+                          <img src={p.url} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                        </div>
+                        <div className="p-1.5 bg-white">
+                          <span className="text-[10px] font-bold text-slate-800 block truncate">{p.name}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {bannerMode === 'url' && (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600">Link direto da capa (URL da internet):</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={settingsForm.banner_url}
+                      onChange={e => setSettingsForm({ ...settingsForm, banner_url: e.target.value })}
+                      placeholder="https://exemplo.com/banner-loja.jpg"
+                      className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+                    />
+                    {settingsForm.banner_url && (
+                      <button
+                        type="button"
+                        onClick={() => setSettingsForm({ ...settingsForm, banner_url: '' })}
+                        className="p-2 text-slate-400 hover:text-rose-500 transition cursor-pointer"
+                        title="Limpar link"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3. PRÉ-VISUALIZAÇÃO COMPLETA AO VIVO */}
+            <div className="pt-2 border-t border-slate-100">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-2">
+                Como os clientes em Canaã dos Carajás verão sua loja:
+              </span>
+              <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-slate-950 relative">
+                <div className="h-28 sm:h-36 relative overflow-hidden">
+                  <img
+                    src={settingsForm.banner_url || 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&h=400&fit=crop&q=80'}
+                    alt="Preview Final Banner"
+                    className="w-full h-full object-cover opacity-75"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                </div>
+                <div className="p-4 sm:px-6 -mt-10 sm:-mt-12 relative z-10 flex items-end gap-3.5 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent">
+                  <img
+                    src={settingsForm.logo_url || 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=200&h=200&fit=crop&q=80'}
+                    alt="Preview Final Logo"
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-3 border-slate-900 shadow-xl bg-slate-800 shrink-0"
+                  />
+                  <div className="text-white space-y-0.5">
+                    <span
+                      style={{ backgroundColor: `${settingsForm.theme_color_primary}30`, color: settingsForm.theme_color_primary }}
+                      className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border border-white/10"
+                    >
+                      Loja Oficial
+                    </span>
+                    <h4 className="font-extrabold text-sm sm:text-base leading-tight">
+                      {settingsForm.name || 'Nome da Sua Loja'}
+                    </h4>
+                    <p className="text-[10px] text-slate-300">
+                      Bairro {settingsForm.neighborhood} • Canaã dos Carajás, PA
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Section: Visual Customizer */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5">
             <div className="flex items-center gap-2">
@@ -938,9 +1391,17 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
                   </div>
                 )}
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-white/20 border-2 border-white/30 flex items-center justify-center font-black text-lg">
-                    {settingsForm.name ? settingsForm.name[0] : 'L'}
-                  </div>
+                  {settingsForm.logo_url ? (
+                    <img
+                      src={settingsForm.logo_url}
+                      alt={settingsForm.name}
+                      className="w-12 h-12 rounded-xl object-cover border border-white/30 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-white/20 border-2 border-white/30 flex items-center justify-center font-black text-lg">
+                      {settingsForm.name ? settingsForm.name[0] : 'L'}
+                    </div>
+                  )}
                   <div>
                     <h4 className="font-extrabold text-sm">{settingsForm.name || 'Nome da Sua Loja'}</h4>
                     <span className="text-[10px] text-slate-300">Canaã dos Carajás, PA</span>

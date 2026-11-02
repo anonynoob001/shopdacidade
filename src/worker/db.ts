@@ -491,6 +491,38 @@ class InMemoryPreparedStatement implements PreparedStatement {
       this.tables.set('sessions', list);
     }
 
+    // Persist store updates in memory
+    if (tbl === 'stores' && /UPDATE/i.test(this.query)) {
+      const stores = this.tables.get('stores') || [];
+      if (stores.length > 0) {
+        const storeId = this.params[this.params.length - 1];
+        const idx = stores.findIndex((s: any) => s.id === storeId || stores.length === 1);
+        if (idx !== -1) {
+          const s = { ...stores[idx] };
+          if (this.params[0]) s.name = this.params[0];
+          if (this.params[1]) s.slug = this.params[1];
+          if (this.params[2]) s.description = this.params[2];
+          if (this.params[3]) s.phone = this.params[3];
+          if (this.params[4]) s.whatsapp = this.params[4];
+          if (this.params[5]) s.instagram = this.params[5];
+          if (this.params[6]) s.street = this.params[6];
+          if (this.params[7]) s.number = this.params[7];
+          if (this.params[8]) s.neighborhood = this.params[8];
+          if (this.params[9] !== null && this.params[9] !== undefined) s.is_open = this.params[9];
+          if (this.params[12] !== null && this.params[12] !== undefined) s.delivery_fee_base = Number(this.params[12]);
+          if (this.params[13]) s.delivery_time_min = this.params[13];
+          if (this.params[14] !== null && this.params[14] !== undefined) s.free_delivery_minimum = Number(this.params[14]);
+          if (this.params[15]) s.logo_url = this.params[15];
+          if (this.params[16]) s.banner_url = this.params[16];
+          if (this.params[17]) s.theme_color_primary = this.params[17];
+          if (this.params[18]) s.theme_color_secondary = this.params[18];
+          if (this.params[19]) s.custom_announcement = this.params[19];
+          stores[idx] = s;
+          this.tables.set('stores', stores);
+        }
+      }
+    }
+
     return { success: true, meta: { changes: 1 } };
   }
 }
