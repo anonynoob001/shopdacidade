@@ -499,25 +499,34 @@ class InMemoryPreparedStatement implements PreparedStatement {
         const idx = stores.findIndex((s: any) => s.id === storeId || stores.length === 1);
         if (idx !== -1) {
           const s = { ...stores[idx] };
-          if (this.params[0]) s.name = this.params[0];
-          if (this.params[1]) s.category = this.params[1];
-          if (this.params[2]) s.slug = this.params[2];
-          if (this.params[3]) s.description = this.params[3];
-          if (this.params[4]) s.phone = this.params[4];
-          if (this.params[5]) s.whatsapp = this.params[5];
-          if (this.params[6]) s.instagram = this.params[6];
-          if (this.params[7]) s.street = this.params[7];
-          if (this.params[8]) s.number = this.params[8];
-          if (this.params[9]) s.neighborhood = this.params[9];
-          if (this.params[10] !== null && this.params[10] !== undefined) s.is_open = this.params[10];
-          if (this.params[13] !== null && this.params[13] !== undefined) s.delivery_fee_base = Number(this.params[13]);
-          if (this.params[14]) s.delivery_time_min = this.params[14];
-          if (this.params[15] !== null && this.params[15] !== undefined) s.free_delivery_minimum = Number(this.params[15]);
-          if (this.params[16]) s.logo_url = this.params[16];
-          if (this.params[17]) s.banner_url = this.params[17];
-          if (this.params[18]) s.theme_color_primary = this.params[18];
-          if (this.params[19]) s.theme_color_secondary = this.params[19];
-          if (this.params[20]) s.custom_announcement = this.params[20];
+          if (/commission_rate_override/i.test(this.query)) {
+            // Admin store update query: status, is_featured, commission_rate_override, category, storeId
+            if (this.params[0]) s.status = this.params[0];
+            if (this.params[1] !== null && this.params[1] !== undefined) s.is_featured = this.params[1];
+            if (this.params[2] !== null && this.params[2] !== undefined) s.commission_rate_override = this.params[2];
+            if (this.params[3]) s.category = this.params[3];
+          } else {
+            // Merchant store update query
+            if (this.params[0]) s.name = this.params[0];
+            if (this.params[1]) s.category = this.params[1];
+            if (this.params[2]) s.slug = this.params[2];
+            if (this.params[3]) s.description = this.params[3];
+            if (this.params[4]) s.phone = this.params[4];
+            if (this.params[5]) s.whatsapp = this.params[5];
+            if (this.params[6]) s.instagram = this.params[6];
+            if (this.params[7]) s.street = this.params[7];
+            if (this.params[8]) s.number = this.params[8];
+            if (this.params[9]) s.neighborhood = this.params[9];
+            if (this.params[10] !== null && this.params[10] !== undefined) s.is_open = this.params[10];
+            if (this.params[13] !== null && this.params[13] !== undefined) s.delivery_fee_base = Number(this.params[13]);
+            if (this.params[14]) s.delivery_time_min = this.params[14];
+            if (this.params[15] !== null && this.params[15] !== undefined) s.free_delivery_minimum = Number(this.params[15]);
+            if (this.params[16]) s.logo_url = this.params[16];
+            if (this.params[17]) s.banner_url = this.params[17];
+            if (this.params[18]) s.theme_color_primary = this.params[18];
+            if (this.params[19]) s.theme_color_secondary = this.params[19];
+            if (this.params[20]) s.custom_announcement = this.params[20];
+          }
           stores[idx] = s;
           this.tables.set('stores', stores);
         }

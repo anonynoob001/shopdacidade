@@ -107,19 +107,21 @@ export async function handleAdminRoutes(req: { method: string; path: string; que
   const storeAdminMatch = path.match(/^\/api\/admin\/stores\/([a-zA-Z0-9_-]+)$/);
   if (method === 'PATCH' && storeAdminMatch) {
     const storeId = storeAdminMatch[1];
-    const { status, is_featured, commission_rate_override } = body || {};
+    const { status, is_featured, commission_rate_override, category } = body || {};
 
     await db.prepare(`
       UPDATE stores SET
         status = COALESCE(?, status),
         is_featured = COALESCE(?, is_featured),
         commission_rate_override = ?,
+        category = COALESCE(?, category),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
       status || null,
       is_featured !== undefined ? (is_featured ? 1 : 0) : null,
       commission_rate_override !== undefined ? Number(commission_rate_override) : null,
+      category || null,
       storeId
     ).run();
 

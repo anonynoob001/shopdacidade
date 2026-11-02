@@ -196,9 +196,40 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ or
                 ))}
               </div>
 
-              <div className="pt-2 border-t border-slate-200 flex justify-between text-xs font-semibold text-slate-600">
-                <span>Taxa de entrega: {sub.delivery_fee > 0 ? formatBRL(sub.delivery_fee) : 'Grátis'}</span>
-                <span className="text-slate-900 font-extrabold">Subtotal: {formatBRL(sub.store_subtotal + sub.delivery_fee)}</span>
+              <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="space-y-0.5">
+                  <span className="text-slate-500 block text-[11px]">Taxa de entrega: {sub.delivery_fee > 0 ? formatBRL(sub.delivery_fee) : 'Grátis'}</span>
+                  <span className="text-slate-900 font-extrabold text-sm block">Total na Loja: {formatBRL(sub.store_subtotal + sub.delivery_fee)}</span>
+                </div>
+
+                {/* Direct WhatsApp receipt to store */}
+                {(() => {
+                  const storePhone = sub.store_whatsapp || sub.store_phone || '';
+                  const cleanPhone = storePhone.replace(/\D/g, '');
+                  const itemsSummary = (sub.items || []).map(it => `• ${it.quantity}x ${it.product_name} (${formatBRL(it.subtotal)})`).join('\n');
+                  const msg = encodeURIComponent(
+                    `Olá! Fiz o pedido *#${order.order_code}* na ${sub.store_name} pelo Shop da Cidade!\n\n` +
+                    `*Itens:*\n${itemsSummary}\n\n` +
+                    `*Taxa de Entrega:* ${sub.delivery_fee > 0 ? formatBRL(sub.delivery_fee) : 'Grátis'}\n` +
+                    `*Total:* ${formatBRL(sub.store_subtotal + sub.delivery_fee)}\n` +
+                    `*Forma de Pagamento:* ${order.payment_method === 'pix' ? 'Pix' : 'No Recebimento'}\n` +
+                    `*Cliente:* ${order.customer_name} (${order.customer_phone})\n\n` +
+                    `Poderiam confirmar o recebimento do pedido? Obrigado!`
+                  );
+                  const waUrl = cleanPhone ? `https://wa.me/55${cleanPhone}?text=${msg}` : `https://wa.me/?text=${msg}`;
+
+                  return (
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition active:scale-95 cursor-pointer"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>Enviar Comanda no WhatsApp da Loja</span>
+                    </a>
+                  );
+                })()}
               </div>
             </div>
           ))}

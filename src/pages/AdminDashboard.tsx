@@ -47,7 +47,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSiteTheme } from '../context/ThemeContext';
-import { apiRequest, formatBRL, formatDateBR } from '../services/api';
+import { apiRequest, formatBRL, formatDateBR, STORE_CATEGORIES } from '../services/api';
 import { AuditLog, PromotionalBanner, ServiceProvider, Store as StoreType, User } from '../worker/types';
 
 interface AdminDashboardProps {
@@ -441,11 +441,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     }
   };
 
-  const handleUpdateStore = async (storeId: string, status: string, is_featured: number) => {
+  const handleUpdateStore = async (storeId: string, status?: string, is_featured?: number, category?: string) => {
     try {
+      const payload: any = {};
+      if (status !== undefined) payload.status = status;
+      if (is_featured !== undefined) payload.is_featured = is_featured;
+      if (category !== undefined) payload.category = category;
+
       await apiRequest(`/api/admin/stores/${storeId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ status, is_featured })
+        body: JSON.stringify(payload)
       });
       await loadAdminData();
     } catch (err: any) {
@@ -1846,6 +1851,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
               <thead className="bg-slate-50 border-b border-slate-100 font-bold text-slate-800">
                 <tr>
                   <th className="px-4 py-3">Loja</th>
+                  <th className="px-4 py-3">Categoria (Trocar)</th>
                   <th className="px-4 py-3">Slug / Link</th>
                   <th className="px-4 py-3">Bairro</th>
                   <th className="px-4 py-3">Status</th>
@@ -1861,9 +1867,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                         <img src={s.logo_url} alt="" className="w-8 h-8 rounded-lg object-cover bg-slate-100 shrink-0" />
                         <div>
                           <span className="font-bold text-slate-900 block">{s.name}</span>
-                          <span className="text-[10px] text-slate-400">{s.category}</span>
+                          <span className="text-[10px] text-slate-400 font-mono">ID: {s.id.slice(0, 10)}</span>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={s.category}
+                        onChange={e => handleUpdateStore(s.id, undefined, undefined, e.target.value)}
+                        className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 cursor-pointer focus:outline-none focus:border-amber-500 shadow-2xs hover:border-slate-400 transition"
+                        title="Alterar categoria deste parceiro já cadastrado"
+                      >
+                        {STORE_CATEGORIES.map(cat => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                     <td className="px-4 py-3 font-mono text-[11px] text-amber-700">/loja/{s.slug}</td>
                     <td className="px-4 py-3">{s.neighborhood}</td>

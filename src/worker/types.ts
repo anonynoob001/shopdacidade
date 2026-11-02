@@ -118,6 +118,10 @@ export interface SubOrder {
   order_id: string;
   store_id: string;
   store_name?: string;
+  store_slug?: string;
+  store_phone?: string;
+  store_whatsapp?: string;
+  store_neighborhood?: string;
   status: 'pending' | 'preparing' | 'ready_for_pickup' | 'out_for_delivery' | 'delivered' | 'cancelled';
   delivery_model: 'store_delivery' | 'platform_courier' | 'pickup';
   store_subtotal: number;
