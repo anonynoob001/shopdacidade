@@ -1,7 +1,7 @@
 import { ArrowLeft, CheckCircle2, Clock, Filter, MapPin, Search, Store as StoreIcon, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { CategoryBubbleItem, CategoryBubbles } from '../components/CategoryBubbles';
-import { apiRequest, CANAA_NEIGHBORHOODS, formatBRL } from '../services/api';
+import { apiRequest, CANAA_NEIGHBORHOODS, formatBRL, STORE_CATEGORIES } from '../services/api';
 import { Store } from '../worker/types';
 
 interface StoresPageProps {
@@ -46,20 +46,40 @@ export const StoresPage: React.FC<StoresPageProps> = ({
 
         const rawCats = initRes.productCategories || [];
         const allStores = initRes.featuredStores || [];
-        // Map category bubbles with active store counts
-        const enrichedCats: CategoryBubbleItem[] = rawCats.map((c: any) => {
-          const count = allStores.filter((s: Store) => 
-            s.category?.toLowerCase() === c.name?.toLowerCase() ||
-            s.category?.toLowerCase() === c.slug?.toLowerCase()
-          ).length;
-          return {
-            id: c.id,
-            name: c.name,
-            slug: c.slug,
-            icon: c.icon,
-            storeCount: count
-          };
+        const seen = new Set<string>();
+        const enrichedCats: CategoryBubbleItem[] = [];
+
+        rawCats.forEach((c: any) => {
+          const lower = c.name.toLowerCase();
+          if (!seen.has(lower)) {
+            seen.add(lower);
+            const count = allStores.filter((s: Store) => 
+              s.category?.toLowerCase() === lower || s.category?.toLowerCase() === c.slug?.toLowerCase()
+            ).length;
+            enrichedCats.push({
+              id: c.id,
+              name: c.name,
+              slug: c.slug,
+              icon: c.icon,
+              storeCount: count
+            });
+          }
         });
+
+        STORE_CATEGORIES.forEach(catName => {
+          const lower = catName.toLowerCase();
+          if (!seen.has(lower)) {
+            seen.add(lower);
+            const count = allStores.filter((s: Store) => s.category?.toLowerCase() === lower).length;
+            enrichedCats.push({
+              id: `cat_${catName.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
+              name: catName,
+              slug: catName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+              storeCount: count
+            });
+          }
+        });
+
         setCategories(enrichedCats);
       } catch (err) {
         console.error('Failed to load stores:', err);

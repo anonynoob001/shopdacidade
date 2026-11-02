@@ -40,7 +40,7 @@ import {
 import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeDisplay } from '../components/QRCodeDisplay';
 import { useAuth } from '../context/AuthContext';
-import { apiRequest, CANAA_NEIGHBORHOODS, formatBRL, formatDateBR } from '../services/api';
+import { apiRequest, CANAA_NEIGHBORHOODS, formatBRL, formatDateBR, STORE_CATEGORIES } from '../services/api';
 import { Product, Store, SubOrder } from '../worker/types';
 
 interface MerchantDashboardProps {
@@ -144,6 +144,7 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
   const [settingsForm, setSettingsForm] = useState({
     name: '',
     slug: '',
+    category: 'Restaurantes & Lanches',
     description: '',
     whatsapp: '',
     phone: '',
@@ -182,6 +183,7 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
         setSettingsForm({
           name: storeRes.store.name,
           slug: storeRes.store.slug,
+          category: storeRes.store.category || 'Restaurantes & Lanches',
           description: storeRes.store.description,
           whatsapp: storeRes.store.whatsapp || '',
           phone: storeRes.store.phone || '',
@@ -1424,7 +1426,7 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
           <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
             <h3 className="text-base font-black text-slate-900 tracking-tight">Informações Cadastrais da Loja</h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Nome Fantasia da Loja *</label>
                 <input
@@ -1434,6 +1436,25 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
                   onChange={e => setSettingsForm({ ...settingsForm, name: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
                 />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Categoria da Loja no Portal *</label>
+                <select
+                  required
+                  value={settingsForm.category}
+                  onChange={e => setSettingsForm({ ...settingsForm, category: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-amber-500"
+                >
+                  {STORE_CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Define em qual categoria sua loja aparece na vitrine e filtros de Canaã.
+                </p>
               </div>
 
               <div>

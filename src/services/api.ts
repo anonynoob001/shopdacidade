@@ -76,3 +76,20 @@ export const CANAA_NEIGHBORHOODS = [
   'Jardim Europa',
   'Zona Rural'
 ];
+
+// Standard Commerce Categories for Canaã dos Carajás
+export const STORE_CATEGORIES = [
+  'Restaurantes & Lanches',
+  'Pizzarias & Hamburguerias',
+  'Supermercado & Bebidas',
+  'Construção & Reforma',
+  'Eletrônicos & Informática',
+  'Moda & Calçados',
+  'Farmácia & Beleza',
+  'Casa, Decoração & Móveis',
+  'Auto & Moto Peças',
+  'Pet Shop & Agro',
+  'Papelaria & Presentes',
+  'Outros Comércios'
+];
+

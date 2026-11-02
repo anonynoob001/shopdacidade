@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { apiRequest, CANAA_NEIGHBORHOODS } from '../services/api';
+import { apiRequest, CANAA_NEIGHBORHOODS, STORE_CATEGORIES } from '../services/api';
 
 interface PartnerRegisterPageProps {
   onNavigate: (view: string, param?: string) => void;
@@ -350,15 +350,9 @@ export const PartnerRegisterPage: React.FC<PartnerRegisterPageProps> = ({ onNavi
                       onChange={e => setStoreCategory(e.target.value)}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-amber-500"
                     >
-                      <option value="Construção & Reforma">Construção & Reforma</option>
-                      <option value="Supermercado & Bebidas">Supermercado & Bebidas</option>
-                      <option value="Eletrônicos & Informática">Eletrônicos & Informática</option>
-                      <option value="Moda & Calçados">Moda & Calçados</option>
-                      <option value="Casa, Decoração & Móveis">Casa, Decoração & Móveis</option>
-                      <option value="Farmácia & Beleza">Farmácia & Beleza</option>
-                      <option value="Auto & Moto Peças">Auto & Moto Peças</option>
-                      <option value="Pet Shop & Agro">Pet Shop & Agro</option>
-                      <option value="Outros Comércios">Outros Comércios</option>
+                      {STORE_CATEGORIES.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
                     </select>
                   </div>
 

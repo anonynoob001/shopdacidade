@@ -145,7 +145,7 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
     if (!store) return { status: 404, data: { error: 'Loja não encontrada.' } };
 
     const {
-      name, description, phone, whatsapp, street, number, neighborhood,
+      name, category, description, phone, whatsapp, street, number, neighborhood,
       is_open, accepts_pickup, accepts_delivery, delivery_fee_base,
       delivery_time_min, free_delivery_minimum, logo_url, banner_url,
       slug, theme_color_primary, theme_color_secondary, custom_announcement, instagram
@@ -163,6 +163,7 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
     await db.prepare(`
       UPDATE stores SET
         name = COALESCE(?, name),
+        category = COALESCE(?, category),
         slug = COALESCE(?, slug),
         description = COALESCE(?, description),
         phone = COALESCE(?, phone),
@@ -185,7 +186,7 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
-      name, cleanSlug || null, description, phone, whatsapp, instagram || null, street, number, neighborhood,
+      name, category || null, cleanSlug || null, description, phone, whatsapp, instagram || null, street, number, neighborhood,
       is_open !== undefined ? (is_open ? 1 : 0) : null,
       accepts_pickup !== undefined ? (accepts_pickup ? 1 : 0) : null,
       accepts_delivery !== undefined ? (accepts_delivery ? 1 : 0) : null,

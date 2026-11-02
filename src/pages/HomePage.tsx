@@ -24,10 +24,9 @@ import {
   Zap,
   X
 } from 'lucide-react';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { CategoryBubbleItem, CategoryBubbles } from '../components/CategoryBubbles';
-import { useCart } from '../context/CartContext';
-import { apiRequest, formatBRL } from '../services/api';
+import { apiRequest, formatBRL, STORE_CATEGORIES } from '../services/api';
 import { Product, PromotionalBanner, ServiceCategory, ServiceProvider, Store } from '../worker/types';
 
 interface HomePageProps {
@@ -36,7 +35,6 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighborhood }) => {
-  const { addItem } = useCart();
   const [data, setData] = useState<{
     banners: PromotionalBanner[];
     productCategories: any[];
@@ -76,6 +74,95 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
     return () => clearInterval(interval);
   }, [data?.banners]);
 
+  // Safe stores list
+  const allStores = data?.featuredStores || [];
+
+  // Combine categories from backend and standard store categories so any chosen category appears immediately
+  const categoryBubbles: CategoryBubbleItem[] = useMemo(() => {
+    if (!data) return [];
+    const list: CategoryBubbleItem[] = [];
+    const seenNames = new Set<string>();
+
+    // 1. Add categories from database
+    (data.productCategories || []).forEach((cat: any) => {
+      const lower = cat.name.toLowerCase();
+      if (!seenNames.has(lower)) {
+        seenNames.add(lower);
+        const count = allStores.filter(s =>
+          s.category?.toLowerCase() === lower || s.category?.toLowerCase() === cat.slug?.toLowerCase()
+        ).length;
+        list.push({
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          icon: cat.icon,
+          storeCount: count
+        });
+      }
+    });
+
+    // 2. Add standard commerce categories if not yet in list
+    STORE_CATEGORIES.forEach(catName => {
+      const lower = catName.toLowerCase();
+      if (!seenNames.has(lower)) {
+        seenNames.add(lower);
+        const count = allStores.filter(s => s.category?.toLowerCase() === lower).length;
+        list.push({
+          id: `cat_${catName.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
+          name: catName,
+          slug: catName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          storeCount: count
+        });
+      }
+    });
+
+    // 3. Add any custom store category if not already in list
+    allStores.forEach(s => {
+      if (s.category && !seenNames.has(s.category.toLowerCase())) {
+        seenNames.add(s.category.toLowerCase());
+        const count = allStores.filter(st => st.category?.toLowerCase() === s.category.toLowerCase()).length;
+        list.push({
+          id: `cat_${s.category.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
+          name: s.category,
+          slug: s.category.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          storeCount: count
+        });
+      }
+    });
+
+    return list;
+  }, [data?.productCategories, allStores]);
+
+  // Filter stores according to selected category bubble & selected neighborhood
+  const displayedStores = useMemo(() => {
+    if (!data) return [];
+    return allStores.filter(store => {
+      // Neighborhood filter
+      if (selectedNeighborhood && store.neighborhood?.toLowerCase() !== selectedNeighborhood.toLowerCase()) {
+        return false;
+      }
+      // Category bubble filter
+      if (selectedCategory) {
+        const matchCat = categoryBubbles.find(
+          c => c.name.toLowerCase() === selectedCategory.toLowerCase() || c.slug.toLowerCase() === selectedCategory.toLowerCase()
+        );
+        const isDirectMatch = store.category?.toLowerCase() === selectedCategory.toLowerCase();
+        const isSlugMatch = matchCat && store.category?.toLowerCase() === matchCat.name.toLowerCase();
+        return isDirectMatch || isSlugMatch;
+      }
+      return true;
+    });
+  }, [allStores, selectedNeighborhood, selectedCategory, categoryBubbles, data]);
+
+  const handleSelectCategoryBubble = (cat: CategoryBubbleItem | null) => {
+    const newCategory = cat ? cat.name : '';
+    setSelectedCategory(newCategory);
+    // Smooth scroll to stores section so customer immediately sees the active stores
+    if (storesSectionRef.current) {
+      storesSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
   if (isLoading || !data) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-slate-500">
@@ -86,49 +173,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
   }
 
   const currentBanner = data.banners[activeBannerIndex] || data.banners[0];
-
-  // Enrich product categories for CategoryBubbles with real active store count
-  const allStores = data.featuredStores || [];
-  const categoryBubbles: CategoryBubbleItem[] = (data.productCategories || []).map((cat: any) => {
-    const count = allStores.filter(s =>
-      s.category?.toLowerCase() === cat.name?.toLowerCase() ||
-      s.category?.toLowerCase() === cat.slug?.toLowerCase()
-    ).length;
-    return {
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      icon: cat.icon,
-      storeCount: count
-    };
-  });
-
-  // Filter stores according to selected category bubble & selected neighborhood
-  const displayedStores = allStores.filter(store => {
-    // Neighborhood filter
-    if (selectedNeighborhood && store.neighborhood?.toLowerCase() !== selectedNeighborhood.toLowerCase()) {
-      return false;
-    }
-    // Category bubble filter
-    if (selectedCategory) {
-      const matchCat = categoryBubbles.find(
-        c => c.name.toLowerCase() === selectedCategory.toLowerCase() || c.slug.toLowerCase() === selectedCategory.toLowerCase()
-      );
-      const isDirectMatch = store.category?.toLowerCase() === selectedCategory.toLowerCase();
-      const isSlugMatch = matchCat && store.category?.toLowerCase() === matchCat.name.toLowerCase();
-      return isDirectMatch || isSlugMatch;
-    }
-    return true;
-  });
-
-  const handleSelectCategoryBubble = (cat: CategoryBubbleItem | null) => {
-    const newCategory = cat ? cat.name : '';
-    setSelectedCategory(newCategory);
-    // Smooth scroll to stores section so customer immediately sees the active stores
-    if (storesSectionRef.current) {
-      storesSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  };
 
   return (
     <div className="space-y-12 pb-16">
@@ -398,91 +442,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
         )}
       </section>
 
-      {/* 4. Produtos Populares & Ofertas com critério real */}
-      <section className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Produtos Recentes & Ofertas</h2>
-            <p className="text-xs sm:text-sm text-slate-500">Estoque atualizado e preços fornecidos diretamente pelas lojas locais</p>
-          </div>
-          <button
-            onClick={() => onNavigate('products')}
-            className="text-xs sm:text-sm font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
-          >
-            Ver mais produtos <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {data.featuredProducts.map(product => {
-            const hasPromo = product.promotional_price && product.promotional_price > 0 && product.promotional_price < product.price;
-            return (
-              <div
-                key={product.id}
-                className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between group"
-              >
-                <div className="relative aspect-square bg-slate-50 overflow-hidden">
-                  <img
-                    src={product.image_url}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                  />
-                  {hasPromo && (
-                    <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider shadow">
-                      Oferta
-                    </span>
-                  )}
-                  {product.stock_quantity <= 3 && product.stock_quantity > 0 && (
-                    <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 text-[10px] font-bold">
-                      Últimas {product.stock_quantity} un.
-                    </span>
-                  )}
-                </div>
-
-                <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                  <div>
-                    <span className="text-[10px] font-semibold text-emerald-700 uppercase tracking-wider block">
-                      {product.store_name}
-                    </span>
-                    <h3 className="font-bold text-xs sm:text-sm text-slate-900 line-clamp-2 mt-0.5 group-hover:text-emerald-700 transition">
-                      {product.name}
-                    </h3>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="pt-2">
-                      {hasPromo ? (
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-base sm:text-lg font-black text-emerald-700">
-                            {formatBRL(product.promotional_price)}
-                          </span>
-                          <span className="text-xs text-slate-400 line-through">
-                            {formatBRL(product.price)}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-base sm:text-lg font-black text-slate-900">
-                          {formatBRL(product.price)}
-                        </span>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => addItem(product, 1)}
-                      className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Adicionar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* 5. Serviços Profissionais de Canaã dos Carajás */}
+      {/* 4. Serviços Profissionais de Canaã dos Carajás */}
       <section className="bg-slate-900 py-12 text-white border-y border-slate-800">
         <div className="max-w-7xl mx-auto px-4 space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">

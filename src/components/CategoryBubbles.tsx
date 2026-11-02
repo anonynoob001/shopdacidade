@@ -1,4 +1,3 @@
-// Shop da Cidade - Clean Categories Component (Categorias)
 import {
   Car,
   Check,
@@ -7,11 +6,13 @@ import {
   Home as HomeIcon,
   Layers,
   PawPrint,
+  Pizza,
   Shirt,
   ShoppingCart,
   Smartphone,
   Sparkles,
-  Store as StoreIcon
+  Store as StoreIcon,
+  UtensilsCrossed
 } from 'lucide-react';
 import React from 'react';
 
@@ -31,7 +32,39 @@ interface CategoryBubblesProps {
   showAllOption?: boolean;
 }
 
-function renderCategoryIcon(iconName?: string) {
+function renderCategoryIcon(iconName?: string, categoryName?: string) {
+  const norm = (categoryName || '').toLowerCase();
+  if (norm.includes('restauran') || norm.includes('lanche') || norm.includes('comida') || iconName === 'Utensils') {
+    return <UtensilsCrossed className="w-5 h-5" />;
+  }
+  if (norm.includes('pizza') || norm.includes('hamburg') || iconName === 'Pizza') {
+    return <Pizza className="w-5 h-5" />;
+  }
+  if (norm.includes('supermercado') || norm.includes('bebida') || norm.includes('mercearia') || iconName === 'ShoppingCart') {
+    return <ShoppingCart className="w-5 h-5" />;
+  }
+  if (norm.includes('constru') || norm.includes('reforma') || iconName === 'Hammer') {
+    return <Hammer className="w-5 h-5" />;
+  }
+  if (norm.includes('eletr') || norm.includes('inform') || norm.includes('celular') || iconName === 'Smartphone') {
+    return <Smartphone className="w-5 h-5" />;
+  }
+  if (norm.includes('moda') || norm.includes('calçado') || norm.includes('roupa') || iconName === 'Shirt') {
+    return <Shirt className="w-5 h-5" />;
+  }
+  if (norm.includes('casa') || norm.includes('decora') || norm.includes('móve') || iconName === 'Home') {
+    return <HomeIcon className="w-5 h-5" />;
+  }
+  if (norm.includes('farm') || norm.includes('saúde') || norm.includes('beleza') || iconName === 'HeartPulse') {
+    return <HeartPulse className="w-5 h-5" />;
+  }
+  if (norm.includes('auto') || norm.includes('moto') || norm.includes('veículo') || iconName === 'Car') {
+    return <Car className="w-5 h-5" />;
+  }
+  if (norm.includes('pet') || norm.includes('agro') || iconName === 'PawPrint') {
+    return <PawPrint className="w-5 h-5" />;
+  }
+
   switch (iconName) {
     case 'Hammer':
       return <Hammer className="w-5 h-5" />;
@@ -124,7 +157,7 @@ export const CategoryBubbles: React.FC<CategoryBubblesProps> = ({
                   active ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-100 text-slate-600 group-hover:bg-amber-100 group-hover:text-amber-800'
                 }`}
               >
-                {renderCategoryIcon(cat.icon)}
+                {renderCategoryIcon(cat.icon, cat.name)}
               </div>
               <div className="text-left">
                 <span className="block leading-tight">{cat.name}</span>
