@@ -49,6 +49,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
   const [isLoading, setIsLoading] = useState(true);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [quickFilter, setQuickFilter] = useState<'all' | 'open' | 'free_shipping' | 'fast_delivery' | 'featured'>('all');
   const storesSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -133,7 +134,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
     return list;
   }, [data?.productCategories, allStores]);
 
-  // Filter stores according to selected category bubble & selected neighborhood
+  // Filter stores according to selected category bubble, selected neighborhood & quick filter
   const displayedStores = useMemo(() => {
     if (!data) return [];
     return allStores.filter(store => {
@@ -148,11 +149,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
         );
         const isDirectMatch = store.category?.toLowerCase() === selectedCategory.toLowerCase();
         const isSlugMatch = matchCat && store.category?.toLowerCase() === matchCat.name.toLowerCase();
-        return isDirectMatch || isSlugMatch;
+        if (!isDirectMatch && !isSlugMatch) return false;
+      }
+      // Quick filter
+      if (quickFilter === 'open') {
+        if (store.is_open !== 1) return false;
+      } else if (quickFilter === 'free_shipping') {
+        const hasFree = store.delivery_fee_base === 0 || (store.free_delivery_minimum !== null && store.free_delivery_minimum !== undefined && store.free_delivery_minimum > 0);
+        if (!hasFree) return false;
+      } else if (quickFilter === 'fast_delivery') {
+        const time = store.delivery_time_min || '';
+        const isFast = time.includes('15') || time.includes('20') || time.includes('25') || time.includes('30');
+        if (!isFast) return false;
+      } else if (quickFilter === 'featured') {
+        if (store.is_featured !== 1) return false;
       }
       return true;
     });
-  }, [allStores, selectedNeighborhood, selectedCategory, categoryBubbles, data]);
+  }, [allStores, selectedNeighborhood, selectedCategory, categoryBubbles, quickFilter, data]);
 
   const handleSelectCategoryBubble = (cat: CategoryBubbleItem | null) => {
     const newCategory = cat ? cat.name : '';
@@ -337,11 +351,73 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
             )}
             <button
               onClick={() => onNavigate('stores', selectedCategory || undefined)}
-              className="text-xs sm:text-sm font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
+              className="text-xs sm:text-sm font-semibold text-[#0047F7] hover:text-[#0038c7] flex items-center gap-1 cursor-pointer"
             >
               Ver todas <ArrowRight className="w-4 h-4" />
             </button>
           </div>
+        </div>
+
+        {/* Quick Filter Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar">
+          <button
+            onClick={() => setQuickFilter('all')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition shrink-0 cursor-pointer ${
+              quickFilter === 'all'
+                ? 'bg-[#0047F7] text-white shadow-md shadow-blue-500/20'
+                : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            Todas as Lojas ({allStores.length})
+          </button>
+
+          <button
+            onClick={() => setQuickFilter('open')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition shrink-0 flex items-center gap-1.5 cursor-pointer ${
+              quickFilter === 'open'
+                ? 'bg-[#0047F7] text-white shadow-md shadow-blue-500/20'
+                : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Aberto Agora</span>
+          </button>
+
+          <button
+            onClick={() => setQuickFilter('free_shipping')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition shrink-0 flex items-center gap-1.5 cursor-pointer ${
+              quickFilter === 'free_shipping'
+                ? 'bg-[#0047F7] text-white shadow-md shadow-blue-500/20'
+                : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <Truck className="w-3.5 h-3.5 text-[#FA4802]" />
+            <span>Frete Grátis</span>
+          </button>
+
+          <button
+            onClick={() => setQuickFilter('fast_delivery')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition shrink-0 flex items-center gap-1.5 cursor-pointer ${
+              quickFilter === 'fast_delivery'
+                ? 'bg-[#0047F7] text-white shadow-md shadow-blue-500/20'
+                : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-500" />
+            <span>Entrega Rápida</span>
+          </button>
+
+          <button
+            onClick={() => setQuickFilter('featured')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition shrink-0 flex items-center gap-1.5 cursor-pointer ${
+              quickFilter === 'featured'
+                ? 'bg-[#0047F7] text-white shadow-md shadow-blue-500/20'
+                : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#FA4802]" />
+            <span>Lojas Oficiais</span>
+          </button>
         </div>
 
         {displayedStores.length === 0 ? (

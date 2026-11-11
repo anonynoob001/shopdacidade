@@ -1,10 +1,8 @@
-// Shop Carajás - Order Confirmation & PIX Payment Page
 import {
   ArrowLeft,
   CheckCircle,
   Copy,
   ExternalLink,
-  MessageCircle,
   Package,
   QrCode,
   ShieldCheck,
@@ -15,6 +13,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { apiRequest, formatBRL, formatDateBR } from '../services/api';
 import { Order } from '../worker/types';
+import { OrderTrackingTimeline } from '../components/OrderTrackingTimeline';
 
 interface OrderConfirmationPageProps {
   orderCode: string;
@@ -163,6 +162,14 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ or
         )}
       </div>
 
+      {/* Real-Time Live Order Tracking Timeline */}
+      <OrderTrackingTimeline
+        status={isPaid ? (order.sub_orders?.[0]?.status || 'preparing') : 'pending'}
+        deliveryType={order.delivery_type as any}
+        estimatedTime="25-45 min"
+        subOrderCode={order.order_code}
+      />
+
       {/* Sub-Orders Breakdown by Store */}
       <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 space-y-6 shadow-xs">
         <h3 className="font-bold text-base text-slate-900 tracking-tight">
@@ -174,10 +181,10 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ or
             <div key={sub.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                 <div className="flex items-center gap-2">
-                  <Store className="w-4 h-4 text-emerald-700" />
+                  <Store className="w-4 h-4 text-[#0047F7]" />
                   <span className="font-bold text-xs sm:text-sm text-slate-900">{sub.store_name}</span>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[10px] font-bold uppercase tracking-wider">
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-[#0047F7] text-[10px] font-bold uppercase tracking-wider">
                   Status: {sub.status}
                 </span>
               </div>
@@ -202,34 +209,10 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ or
                   <span className="text-slate-900 font-extrabold text-sm block">Total na Loja: {formatBRL(sub.store_subtotal + sub.delivery_fee)}</span>
                 </div>
 
-                {/* Direct WhatsApp receipt to store */}
-                {(() => {
-                  const storePhone = sub.store_whatsapp || sub.store_phone || '';
-                  const cleanPhone = storePhone.replace(/\D/g, '');
-                  const itemsSummary = (sub.items || []).map(it => `• ${it.quantity}x ${it.product_name} (${formatBRL(it.subtotal)})`).join('\n');
-                  const msg = encodeURIComponent(
-                    `Olá! Fiz o pedido *#${order.order_code}* na ${sub.store_name} pelo Shop da Cidade!\n\n` +
-                    `*Itens:*\n${itemsSummary}\n\n` +
-                    `*Taxa de Entrega:* ${sub.delivery_fee > 0 ? formatBRL(sub.delivery_fee) : 'Grátis'}\n` +
-                    `*Total:* ${formatBRL(sub.store_subtotal + sub.delivery_fee)}\n` +
-                    `*Forma de Pagamento:* ${order.payment_method === 'pix' ? 'Pix' : 'No Recebimento'}\n` +
-                    `*Cliente:* ${order.customer_name} (${order.customer_phone})\n\n` +
-                    `Poderiam confirmar o recebimento do pedido? Obrigado!`
-                  );
-                  const waUrl = cleanPhone ? `https://wa.me/55${cleanPhone}?text=${msg}` : `https://wa.me/?text=${msg}`;
-
-                  return (
-                    <a
-                      href={waUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition active:scale-95 cursor-pointer"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      <span>Enviar Comanda no WhatsApp da Loja</span>
-                    </a>
-                  );
-                })()}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold">
+                  <Truck className="w-3.5 h-3.5 text-[#0047F7]" />
+                  <span>Entrega em Canaã dos Carajás</span>
+                </div>
               </div>
             </div>
           ))}
@@ -238,20 +221,10 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ or
         <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
           <button
             onClick={() => onNavigate('my-orders')}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#0047F7] hover:bg-[#0038c7] text-white font-bold text-xs transition cursor-pointer shadow-md shadow-blue-500/20"
           >
-            Acompanhar Meus Pedidos
+            Acompanhar Todos os Meus Pedidos
           </button>
-
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(`Olá! Acabei de registrar o pedido #${order.order_code} no Shop da Cidade (Canaã dos Carajás, PA) no valor de ${formatBRL(order.total_amount)}!`)}`}
-            target="_blank"
-            rel="noreferrer"
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer"
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span>Falar com o Atendimento via WhatsApp</span>
-          </a>
 
           <button
             onClick={() => onNavigate('home')}

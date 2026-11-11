@@ -46,7 +46,6 @@ import {
   X
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
-import { QRCodeDisplay } from '../components/QRCodeDisplay';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest, CANAA_NEIGHBORHOODS, formatBRL, formatDateBR, STORE_CATEGORIES } from '../services/api';
 import { playNewOrderChime } from '../utils/audioAlert';
@@ -690,7 +689,7 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
           <button
             type="button"
             onClick={() => handleOpenProdModal()}
-            className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+            className="px-4 py-2.5 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] text-white font-black text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-md shadow-orange-950/20"
           >
             <Plus className="w-4 h-4" />
             <span>Novo Produto</span>
@@ -806,31 +805,23 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
       {/* TAB: STORE URL & DIVULGAÇÃO (Dedicated link for each merchant) */}
       {activeTab === 'store-url' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <div className="bg-gradient-to-br from-slate-900 to-slate-950 rounded-3xl p-6 sm:p-8 text-white shadow-lg border border-slate-800 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <span className="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-black uppercase tracking-wider">
-                  Link Exclusivo da Sua Loja
-                </span>
-                <h2 className="text-2xl font-black tracking-tight mt-2">
-                  Cada comerciante possui uma URL própria no Shop da Cidade
-                </h2>
-                <p className="text-xs text-slate-300 max-w-xl mt-1 leading-relaxed">
-                  Seus clientes entram diretamente no seu catálogo com suas cores personalizadas, logotipo e produtos exclusivos. Você pode enviar pelo WhatsApp ou imprimir o QR Code para colocar no balcão e embalagens!
-                </p>
-              </div>
-
-              {/* QR Code Quick Display */}
-              <div className="shrink-0 flex flex-col items-center p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xs">
-                <QRCodeDisplay value={storeFullUrl} size={130} />
-                <span className="text-[10px] text-slate-400 mt-2 font-mono">/loja/{store.slug}</span>
-              </div>
+          <div className="bg-gradient-to-br from-[#071536] to-[#040c20] rounded-3xl p-6 sm:p-8 text-white shadow-lg border border-slate-800 space-y-6">
+            <div>
+              <span className="px-3 py-1 rounded-full bg-[#0047F7]/20 text-blue-300 text-[10px] font-black uppercase tracking-wider">
+                Link Exclusivo da Sua Loja
+              </span>
+              <h2 className="text-2xl font-black tracking-tight mt-2">
+                Cada comerciante possui uma URL própria no Shop da Cidade
+              </h2>
+              <p className="text-xs text-slate-300 max-w-2xl mt-1 leading-relaxed">
+                Seus clientes entram diretamente no seu catálogo com suas cores personalizadas, logotipo e produtos exclusivos. Envie seu link direto aos clientes em Canaã dos Carajás!
+              </p>
             </div>
 
             {/* Direct URL input bar with Copy & Open */}
             <div className="p-3 bg-white/10 rounded-2xl border border-white/15 flex flex-col sm:flex-row items-center gap-3">
-              <div className="flex-1 w-full flex items-center gap-2 px-3 py-2 bg-black/40 rounded-xl font-mono text-xs text-amber-300 break-all select-all">
-                <LinkIcon className="w-4 h-4 text-amber-400 shrink-0" />
+              <div className="flex-1 w-full flex items-center gap-2 px-3 py-2 bg-black/40 rounded-xl font-mono text-xs text-blue-200 break-all select-all">
+                <LinkIcon className="w-4 h-4 text-[#0047F7] shrink-0" />
                 <span>{storeFullUrl}</span>
               </div>
 
@@ -838,10 +829,10 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
                 <button
                   type="button"
                   onClick={handleCopyStoreLink}
-                  className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md"
+                  className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-[#0047F7] hover:bg-[#0038c7] text-white font-black text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md shadow-blue-500/20"
                 >
-                  {copiedLink ? <Check className="w-4 h-4 text-slate-950" /> : <Copy className="w-4 h-4" />}
-                  <span>{copiedLink ? 'Copiado!' : 'Copiar Link'}</span>
+                  {copiedLink ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
+                  <span>{copiedLink ? 'Copiado!' : 'Copiar Link da Loja'}</span>
                 </button>
 
                 <button
@@ -855,27 +846,15 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
               </div>
             </div>
 
-            {/* WhatsApp Share Button */}
+            {/* Direct Share Link */}
             <div className="pt-2 flex flex-wrap items-center gap-3">
-              <a
-                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                  `Olá! Conheça o catálogo virtual da ${store.name} no Shop da Cidade: ${storeFullUrl}`
-                )}`}
-                target="_blank"
-                rel="noreferrer"
-                className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-2 shadow-md transition"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>Compartilhar Catálogo no WhatsApp dos Clientes</span>
-              </a>
-
               <button
                 type="button"
-                onClick={() => window.print()}
-                className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-xs flex items-center gap-2 transition cursor-pointer"
+                onClick={handleCopyStoreLink}
+                className="px-5 py-3 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] text-white font-black text-xs flex items-center gap-2 shadow-md shadow-orange-950/20 transition cursor-pointer"
               >
-                <Printer className="w-4 h-4" />
-                <span>Imprimir Folha com QR Code da Loja</span>
+                <Share2 className="w-4 h-4" />
+                <span>{copiedLink ? 'Link Copiado!' : 'Copiar Link para Divulgação'}</span>
               </button>
             </div>
           </div>

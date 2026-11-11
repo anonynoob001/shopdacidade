@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest, formatBRL, formatDateBR } from '../services/api';
 import { Order } from '../worker/types';
+import { OrderTrackingTimeline } from '../components/OrderTrackingTimeline';
 
 interface MyOrdersPageProps {
   onNavigate: (view: string, param?: string) => void;
@@ -100,9 +101,17 @@ export const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ onNavigate }) => {
 
                 <div className="text-right">
                   <span className="text-xs text-slate-500 block">Total do Pedido:</span>
-                  <span className="font-black text-lg text-emerald-700">{formatBRL(order.total_amount)}</span>
+                  <span className="font-black text-lg text-[#0047F7]">{formatBRL(order.total_amount)}</span>
                 </div>
               </div>
+
+              {/* Real-Time Live Order Tracking Timeline */}
+              <OrderTrackingTimeline
+                status={order.payment_status === 'confirmed' ? (order.sub_orders?.[0]?.status || 'preparing') : 'pending'}
+                deliveryType={order.delivery_type as any}
+                estimatedTime="25-45 min"
+                subOrderCode={order.order_code}
+              />
 
               {/* Sub-orders */}
               <div className="space-y-3">
@@ -114,10 +123,10 @@ export const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ onNavigate }) => {
                     <div key={sub.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                          <Store className="w-3.5 h-3.5 text-emerald-600" />
+                          <Store className="w-3.5 h-3.5 text-[#0047F7]" />
                           <span>{sub.store_name}</span>
                         </div>
-                        <span className="px-2 py-0.5 rounded-md bg-slate-200 text-slate-800 text-[10px] font-semibold uppercase">
+                        <span className="px-2 py-0.5 rounded-md bg-blue-100 text-[#0047F7] text-[10px] font-semibold uppercase">
                           {sub.status}
                         </span>
                       </div>
@@ -143,10 +152,10 @@ export const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ onNavigate }) => {
               <div className="pt-2 flex justify-end">
                 <button
                   onClick={() => onNavigate('order-confirmation', order.order_code)}
-                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-[#0047F7] hover:bg-[#0038c7] text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-blue-500/20"
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  Ver Detalhes & PIX
+                  Ver Detalhes do Pedido
                 </button>
               </div>
             </div>

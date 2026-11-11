@@ -18,6 +18,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { apiRequest, CANAA_NEIGHBORHOODS, formatBRL } from '../services/api';
+import { FreeShippingProgressBar } from '../components/FreeShippingProgressBar';
 
 interface CartPageProps {
   onNavigate: (view: string, param?: string) => void;
@@ -169,7 +170,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                 {/* Store header */}
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#0047F7] flex items-center justify-center font-bold">
                       <Store className="w-4 h-4" />
                     </div>
                     <div>
@@ -180,11 +181,20 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
 
                   <div className="text-right text-xs">
                     <span className="text-slate-500">Taxa entrega: </span>
-                    <span className="font-bold text-slate-800">
+                    <span className={`font-bold ${group.delivery_fee === 0 ? 'text-emerald-600' : 'text-slate-800'}`}>
                       {deliveryType === 'pickup' ? 'Retirada (R$ 0)' : group.delivery_fee > 0 ? formatBRL(group.delivery_fee) : 'Grátis'}
                     </span>
                   </div>
                 </div>
+
+                {/* Free Shipping Motivator Progress Bar */}
+                {deliveryType === 'delivery' && (
+                  <FreeShippingProgressBar
+                    subtotal={group.subtotal}
+                    freeDeliveryMinimum={group.free_delivery_minimum || 150.00}
+                    storeName={group.store_name}
+                  />
+                )}
 
                 {/* Items in this store */}
                 <div className="divide-y divide-slate-100">
@@ -397,23 +407,23 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
               <label
                 onClick={() => setPaymentMethod('pix')}
                 className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition ${
-                  paymentMethod === 'pix' ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-200'
+                  paymentMethod === 'pix' ? 'border-[#0047F7] bg-[#0047F7]/10 ring-1 ring-[#0047F7]' : 'border-slate-200'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <QrCode className="w-4 h-4 text-emerald-600" />
+                  <QrCode className="w-4 h-4 text-[#0047F7]" />
                   <div>
                     <span className="font-bold text-slate-900 block">PIX (Recomendado)</span>
                     <span className="text-[10px] text-slate-500">Aprovação imediata e preparo mais rápido</span>
                   </div>
                 </div>
-                <input type="radio" checked={paymentMethod === 'pix'} readOnly className="accent-emerald-600" />
+                <input type="radio" checked={paymentMethod === 'pix'} readOnly className="accent-[#0047F7]" />
               </label>
 
               <label
                 onClick={() => setPaymentMethod('delivery_card')}
                 className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition ${
-                  paymentMethod === 'delivery_card' ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-200'
+                  paymentMethod === 'delivery_card' ? 'border-[#0047F7] bg-[#0047F7]/10 ring-1 ring-[#0047F7]' : 'border-slate-200'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -423,29 +433,29 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                     <span className="text-[10px] text-slate-500">Pague na maquininha do entregador ou balcão</span>
                   </div>
                 </div>
-                <input type="radio" checked={paymentMethod === 'delivery_card'} readOnly className="accent-emerald-600" />
+                <input type="radio" checked={paymentMethod === 'delivery_card'} readOnly className="accent-[#0047F7]" />
               </label>
 
               <label
                 onClick={() => setPaymentMethod('delivery_cash')}
                 className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition ${
-                  paymentMethod === 'delivery_cash' ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-200'
+                  paymentMethod === 'delivery_cash' ? 'border-[#0047F7] bg-[#0047F7]/10 ring-1 ring-[#0047F7]' : 'border-slate-200'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="font-black text-emerald-700 text-sm">R$</span>
+                  <span className="font-black text-[#0047F7] text-sm">R$</span>
                   <div>
                     <span className="font-bold text-slate-900 block">Dinheiro na Entrega</span>
                     <span className="text-[10px] text-slate-500">Pague em espécie ao receber o pedido</span>
                   </div>
                 </div>
-                <input type="radio" checked={paymentMethod === 'delivery_cash'} readOnly className="accent-emerald-600" />
+                <input type="radio" checked={paymentMethod === 'delivery_cash'} readOnly className="accent-[#0047F7]" />
               </label>
             </div>
           </div>
 
           {/* Order Summary & Submit */}
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-4 text-white shadow-xl">
+          <div className="bg-[#071536] rounded-2xl border border-slate-800 p-5 space-y-4 text-white shadow-xl">
             <h3 className="font-bold text-base tracking-tight">Resumo do Pedido</h3>
             <div className="space-y-2 text-xs text-slate-300">
               <div className="flex justify-between">
@@ -460,20 +470,20 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
               </div>
               <div className="pt-3 border-t border-slate-800 flex justify-between items-baseline">
                 <span className="text-sm font-bold text-white">Total a pagar:</span>
-                <span className="text-xl font-black text-emerald-400">{formatBRL(finalTotal)}</span>
+                <span className="text-xl font-black text-[#FA4802]">{formatBRL(finalTotal)}</span>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 font-extrabold text-slate-950 text-sm tracking-wide shadow-lg transition active:scale-95 cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] font-black text-white text-sm tracking-wide shadow-lg shadow-orange-950/40 transition active:scale-95 cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Gerando Pedido...' : 'Confirmar e Fechar Pedido'}
             </button>
 
             <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <ShieldCheck className="w-3.5 h-3.5 text-[#0047F7]" />
               <span>Compra 100% segura pelo Shop da Cidade — Canaã dos Carajás</span>
             </div>
           </div>
