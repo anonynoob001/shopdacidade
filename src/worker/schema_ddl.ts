@@ -35,6 +35,10 @@ export async function runSchemaMigration(db: any): Promise<{ success: boolean; t
   try { await db.prepare('ALTER TABLE users ADD COLUMN two_factor_secret TEXT;').run(); } catch (_) {}
   try { await db.prepare('ALTER TABLE users ADD COLUMN two_factor_backup_codes TEXT;').run(); } catch (_) {}
 
+  // Ensure store columns exist for weekly hours and neighborhood delivery fees
+  try { await db.prepare('ALTER TABLE stores ADD COLUMN opening_hours_json TEXT;').run(); } catch (_) {}
+  try { await db.prepare('ALTER TABLE stores ADD COLUMN neighborhood_fees_json TEXT;').run(); } catch (_) {}
+
   // Ensure superadmin accounts are seeded with verified PBKDF2 hash (password: 123456)
   const superHash = '78552bef20048edb3a63905a4adfa1908f7c3ccc4b6fe4af83a87d2a8849e751';
   try {

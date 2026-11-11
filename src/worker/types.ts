@@ -62,6 +62,7 @@ export interface Store {
   theme_color_secondary?: string;
   custom_announcement?: string;
   instagram?: string;
+  neighborhood_fees_json?: string;
   created_at: string;
   updated_at: string;
 }

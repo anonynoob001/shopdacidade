@@ -2,8 +2,11 @@
 import {
   AlertCircle,
   ArrowLeft,
+  Bell,
+  Camera,
   Check,
   CheckCircle,
+  CheckCircle2,
   Clock,
   Copy,
   DollarSign,
@@ -12,7 +15,9 @@ import {
   ExternalLink,
   Eye,
   Globe,
+  Image as ImageIcon,
   Instagram,
+  Key,
   Link as LinkIcon,
   MapPin,
   Megaphone,
@@ -25,22 +30,27 @@ import {
   QrCode,
   Save,
   Share2,
+  ShieldAlert,
+  ShieldCheck,
   ShoppingBag,
   Sliders,
-  Camera,
-  Image as ImageIcon,
   Sparkles,
   Store as StoreIcon,
   Trash2,
   TrendingUp,
   Truck,
   Upload,
+  Volume2,
+  VolumeX,
+  Calendar,
   X
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeDisplay } from '../components/QRCodeDisplay';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest, CANAA_NEIGHBORHOODS, formatBRL, formatDateBR, STORE_CATEGORIES } from '../services/api';
+import { playNewOrderChime } from '../utils/audioAlert';
+import { DAY_NAMES, DEFAULT_WEEKLY_SCHEDULE, parseStoreSchedule, WeeklySchedule } from '../utils/storeSchedule';
 import { Product, Store, SubOrder } from '../worker/types';
 
 interface MerchantDashboardProps {
@@ -123,9 +133,40 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<SubOrder[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'store-url' | 'analytics' | 'settings'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'store-url' | 'analytics' | 'settings' | 'security'>('orders');
   const [isLoading, setIsLoading] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Sound alerts
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    return typeof localStorage !== 'undefined' ? localStorage.getItem('merchant_sound_enabled') !== 'false' : true;
+  });
+  const prevPendingOrdersCount = useRef<number>(-1);
+
+  // Weekly Schedule & Neighborhood Delivery Fees
+  const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>(DEFAULT_WEEKLY_SCHEDULE);
+  const [neighborhoodFees, setNeighborhoodFees] = useState<Record<string, string>>({});
+
+  // 2FA state for Merchant
+  const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
+  const [twoFactorSetupData, setTwoFactorSetupData] = useState<{
+    secret: string;
+    otpauth_uri: string;
+    qr_code_data_url: string;
+    backup_codes: string[];
+  } | null>(null);
+  const [twoFactorVerifyCode, setTwoFactorVerifyCode] = useState('');
+  const [isActivating2FA, setIsActivating2FA] = useState(false);
+  const [twoFactorError, setTwoFactorError] = useState<string | null>(null);
+  const [twoFactorSuccess, setTwoFactorSuccess] = useState<string | null>(null);
+  const [copiedSecret, setCopiedSecret] = useState(false);
+  const [copiedBackupCodes, setCopiedBackupCodes] = useState(false);
+
+  // Disable 2FA modal
+  const [isDisable2FAModalOpen, setIsDisable2FAModalOpen] = useState(false);
+  const [disablePassword, setDisablePassword] = useState('');
+  const [isDisabling2FA, setIsDisabling2FA] = useState(false);
+  const [disable2FAError, setDisable2FAError] = useState<string | null>(null);
 
   // Product modal
   const [isProdModalOpen, setIsProdModalOpen] = useState(false);
@@ -202,6 +243,18 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
           banner_url: storeRes.store.banner_url || ''
         });
 
+        if (storeRes.store.opening_hours_json) {
+          setWeeklySchedule(parseStoreSchedule(storeRes.store.opening_hours_json));
+        }
+        if (storeRes.store.neighborhood_fees_json) {
+          try {
+            const parsed = typeof storeRes.store.neighborhood_fees_json === 'string'
+              ? JSON.parse(storeRes.store.neighborhood_fees_json)
+              : storeRes.store.neighborhood_fees_json;
+            setNeighborhoodFees(parsed || {});
+          } catch {}
+        }
+
         const [prodsRes, ordersRes, analRes] = await Promise.all([
           apiRequest<{ products: Product[] }>('/api/merchant/products'),
           apiRequest<{ orders: SubOrder[] }>('/api/merchant/orders'),
@@ -209,7 +262,13 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
         ]);
 
         setProducts(prodsRes.products || []);
-        setOrders(ordersRes.orders || []);
+        const loadedOrders = ordersRes.orders || [];
+        const pendingCount = loadedOrders.filter(o => o.status === 'pending').length;
+        if (prevPendingOrdersCount.current !== -1 && pendingCount > prevPendingOrdersCount.current && soundEnabled) {
+          playNewOrderChime();
+        }
+        prevPendingOrdersCount.current = pendingCount;
+        setOrders(loadedOrders);
         setAnalytics(analRes.analytics || null);
       } else {
         setProducts([]);
@@ -226,6 +285,26 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
   useEffect(() => {
     loadMerchantData();
   }, []);
+
+  // Real-time polling for new incoming orders every 20 seconds with audio chime
+  useEffect(() => {
+    if (!store?.id) return;
+    const interval = setInterval(() => {
+      apiRequest<{ orders: SubOrder[] }>('/api/merchant/orders')
+        .then(res => {
+          if (res && res.orders) {
+            const pendingCount = res.orders.filter(o => o.status === 'pending').length;
+            if (prevPendingOrdersCount.current !== -1 && pendingCount > prevPendingOrdersCount.current && soundEnabled) {
+              playNewOrderChime();
+            }
+            prevPendingOrdersCount.current = pendingCount;
+            setOrders(res.orders);
+          }
+        })
+        .catch(() => {});
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [store?.id, soundEnabled]);
 
   const handleUpdateOrderStatus = async (subOrderId: string, status: string) => {
     try {
@@ -410,7 +489,9 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
           ...settingsForm,
           delivery_fee_base: parseFloat(settingsForm.delivery_fee_base),
           free_delivery_minimum: parseFloat(settingsForm.free_delivery_minimum),
-          is_open: settingsForm.is_open ? 1 : 0
+          is_open: settingsForm.is_open ? 1 : 0,
+          opening_hours_json: JSON.stringify(weeklySchedule),
+          neighborhood_fees_json: JSON.stringify(neighborhoodFees)
         })
       });
       if (res && res.store) {
@@ -423,6 +504,71 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
       alert(err?.message || 'Falha ao atualizar dados da loja.');
     } finally {
       setIsSavingSettings(false);
+    }
+  };
+
+  // 2FA Handlers for Merchant
+  const handleOpen2FASetup = async () => {
+    setIs2FAModalOpen(true);
+    setTwoFactorError(null);
+    setTwoFactorSuccess(null);
+    setTwoFactorVerifyCode('');
+    try {
+      const res = await apiRequest<{
+        success: boolean;
+        secret: string;
+        otpauth_uri: string;
+        qr_code_data_url: string;
+        backup_codes: string[];
+      }>('/api/auth/2fa/setup');
+      setTwoFactorSetupData(res);
+    } catch (err: any) {
+      setTwoFactorError(err?.message || 'Falha ao gerar credencial 2FA.');
+    }
+  };
+
+  const handleConfirm2FAActivation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!twoFactorSetupData || !twoFactorVerifyCode.trim()) return;
+    setIsActivating2FA(true);
+    setTwoFactorError(null);
+    try {
+      const res = await apiRequest<{ success: boolean; message: string }>('/api/auth/2fa/verify-activate', {
+        method: 'POST',
+        body: JSON.stringify({
+          secret: twoFactorSetupData.secret,
+          code: twoFactorVerifyCode.trim(),
+          backup_codes: twoFactorSetupData.backup_codes
+        })
+      });
+      setTwoFactorSuccess(res.message || 'Verificação em Duas Etapas ativada com sucesso!');
+      setTimeout(() => {
+        setIs2FAModalOpen(false);
+        window.location.reload();
+      }, 2000);
+    } catch (err: any) {
+      setTwoFactorError(err?.message || 'Código incorreto. Verifique o relógio do seu celular e tente novamente.');
+    } finally {
+      setIsActivating2FA(false);
+    }
+  };
+
+  const handleDisable2FA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!disablePassword) return;
+    setIsDisabling2FA(true);
+    setDisable2FAError(null);
+    try {
+      await apiRequest('/api/auth/2fa/disable', {
+        method: 'POST',
+        body: JSON.stringify({ password: disablePassword })
+      });
+      setIsDisable2FAModalOpen(false);
+      window.location.reload();
+    } catch (err: any) {
+      setDisable2FAError(err?.message || 'Senha incorreta.');
+    } finally {
+      setIsDisabling2FA(false);
     }
   };
 
@@ -640,7 +786,20 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
           }`}
         >
           <Camera className="w-4 h-4 text-amber-500" />
-          Fotos, Cores & Perfil da Loja
+          Perfil, Fotos & Cores
+        </button>
+
+        <button
+          onClick={() => setActiveTab('security')}
+          className={`pb-3 border-b-2 transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'security' ? 'border-amber-500 text-slate-950 font-black' : 'border-transparent hover:text-slate-900'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          Segurança & 2FA
+          {user?.two_factor_enabled && (
+            <span className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-200" title="2FA Ativo" />
+          )}
         </button>
       </div>
 
@@ -748,9 +907,52 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
       {/* TAB: ORDERS */}
       {activeTab === 'orders' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-sm text-slate-900">Histórico de Pedidos Recebidos</h3>
-            <span className="text-xs text-slate-500">Atualizado em tempo real</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div>
+              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                <span>Gerenciador de Pedidos</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Conectado em tempo real" />
+              </h3>
+              <p className="text-xs text-slate-500">Monitorado e atualizado automaticamente a cada 20 segundos</p>
+            </div>
+
+            {/* Audio Alert Controls */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !soundEnabled;
+                  setSoundEnabled(next);
+                  if (typeof localStorage !== 'undefined') {
+                    localStorage.setItem('merchant_sound_enabled', String(next));
+                  }
+                  if (next) playNewOrderChime();
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition cursor-pointer ${
+                  soundEnabled
+                    ? 'bg-amber-50 border-amber-300 text-amber-900 shadow-xs'
+                    : 'bg-slate-100 border-slate-200 text-slate-600'
+                }`}
+                title={soundEnabled ? 'Alarme sonoro ativado para novos pedidos' : 'Som desativado'}
+              >
+                {soundEnabled ? (
+                  <Volume2 className="w-4 h-4 text-amber-600 animate-pulse" />
+                ) : (
+                  <VolumeX className="w-4 h-4 text-slate-400" />
+                )}
+                <span>Alerta Sonoro: {soundEnabled ? 'Ativado' : 'Silenciado'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => playNewOrderChime()}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                title="Tocar som de teste da campainha"
+              >
+                <Bell className="w-3.5 h-3.5 text-slate-500" />
+                <span>Testar Alarme</span>
+              </button>
+            </div>
           </div>
 
           {orders.length === 0 ? (
@@ -1588,8 +1790,145 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
                   onChange={e => setSettingsForm({ ...settingsForm, is_open: e.target.checked })}
                   className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500"
                 />
-                <span>Estabelecimento Aberto para Receber Pedidos Agora</span>
+                <span>Estabelecimento Aberto para Receber Pedidos Agora (Chave Geral)</span>
               </label>
+            </div>
+          </div>
+
+          {/* Section: Weekly Operating Schedule (Horário de Funcionamento Automático) */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-amber-500" />
+                <div>
+                  <h3 className="text-base font-black text-slate-900 tracking-tight">Horário de Funcionamento Semanal</h3>
+                  <p className="text-xs text-slate-500">
+                    O sistema identifica automaticamente se a loja está aberta ou fechada com base na hora e dia da semana.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setWeeklySchedule({
+                    segunda: { isOpen: true, from: '08:00', to: '22:00' },
+                    terca: { isOpen: true, from: '08:00', to: '22:00' },
+                    quarta: { isOpen: true, from: '08:00', to: '22:00' },
+                    quinta: { isOpen: true, from: '08:00', to: '22:00' },
+                    sexta: { isOpen: true, from: '08:00', to: '22:00' },
+                    sabado: { isOpen: true, from: '08:00', to: '22:00' },
+                    domingo: { isOpen: false, from: '08:00', to: '14:00' }
+                  });
+                }}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer self-start sm:self-auto"
+              >
+                Preencher Padrão (Seg a Sáb 08h-22h)
+              </button>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {(Object.keys(DAY_NAMES) as Array<keyof WeeklySchedule>).map(dayKey => {
+                const day = weeklySchedule[dayKey];
+                return (
+                  <div key={dayKey} className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3 w-40">
+                      <input
+                        type="checkbox"
+                        checked={day.isOpen}
+                        onChange={e => {
+                          setWeeklySchedule({
+                            ...weeklySchedule,
+                            [dayKey]: { ...day, isOpen: e.target.checked }
+                          });
+                        }}
+                        className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 cursor-pointer"
+                        id={`check_${dayKey}`}
+                      />
+                      <label htmlFor={`check_${dayKey}`} className="font-bold text-slate-800 cursor-pointer">
+                        {DAY_NAMES[dayKey]}
+                      </label>
+                    </div>
+
+                    {day.isOpen ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500">Das</span>
+                        <input
+                          type="time"
+                          value={day.from}
+                          onChange={e => {
+                            setWeeklySchedule({
+                              ...weeklySchedule,
+                              [dayKey]: { ...day, from: e.target.value }
+                            });
+                          }}
+                          className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-800 text-xs"
+                        />
+                        <span className="text-slate-500">às</span>
+                        <input
+                          type="time"
+                          value={day.to}
+                          onChange={e => {
+                            setWeeklySchedule({
+                              ...weeklySchedule,
+                              [dayKey]: { ...day, to: e.target.value }
+                            });
+                          }}
+                          className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-800 text-xs"
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-slate-400 font-semibold italic">Fechado o dia todo</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section: Canaã dos Carajás Neighborhood Delivery Fees */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+            <div className="flex items-center gap-2">
+              <Truck className="w-5 h-5 text-amber-500" />
+              <div>
+                <h3 className="text-base font-black text-slate-900 tracking-tight">
+                  Tabela de Taxa de Entrega por Bairro em Canaã dos Carajás
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Defina valores diferenciados por bairro (ex: Centro R$ 5,00, Vale Canaã R$ 12,00). Deixe em branco para usar a Taxa Base padrão de {formatBRL(parseFloat(settingsForm.delivery_fee_base) || 7)}.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {CANAA_NEIGHBORHOODS.map(nh => (
+                <div key={nh} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                  <span className="block font-bold text-xs text-slate-800">Bairro {nh}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-400">R$</span>
+                    <input
+                      type="number"
+                      step="0.50"
+                      min="0"
+                      placeholder={settingsForm.delivery_fee_base}
+                      value={neighborhoodFees[nh] || ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setNeighborhoodFees(prev => {
+                          const updated = { ...prev };
+                          if (val === '') {
+                            delete updated[nh];
+                          } else {
+                            updated[nh] = val;
+                          }
+                          return updated;
+                        });
+                      }}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -1602,6 +1941,312 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
             {isSavingSettings ? 'Salvando...' : 'Salvar Personalização e Dados da Loja'}
           </button>
         </form>
+      )}
+
+      {/* TAB: SECURITY & 2FA */}
+      {activeTab === 'security' && (
+        <div className="space-y-6 max-w-3xl animate-in fade-in duration-200">
+          {/* 2FA Protection Card */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-2xl ${user?.two_factor_enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 tracking-tight">
+                    Autenticação em Duas Etapas (2FA TOTP)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Padrão bancário internacional compatível com Google Authenticator, Authy e Microsoft Authenticator.
+                  </p>
+                </div>
+              </div>
+
+              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                user?.two_factor_enabled
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  : 'bg-amber-100 text-amber-800 border border-amber-200'
+              }`}>
+                {user?.two_factor_enabled ? 'Protegido com 2FA' : 'Não Ativado'}
+              </span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2">
+              <p className="font-semibold text-slate-800">
+                {user?.two_factor_enabled
+                  ? 'Sua conta de lojista está blindada. Mesmo que alguém descubra a sua senha, não conseguirá acessar seu painel sem o código temporário de 6 dígitos gerado no seu celular.'
+                  : 'Ative o 2FA para proteger seus produtos, preços, pedidos e dados bancários da loja em Canaã dos Carajás. Ao fazer login, será solicitado um código dinâmico gerado no seu smartphone.'}
+              </p>
+              <div className="flex items-center gap-2 text-slate-500 text-[11px]">
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Bloqueio anti-força-bruta automático após 5 tentativas incorretas (15 minutos).</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-500 text-[11px]">
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span>8 códigos de emergência descartáveis caso você fique sem celular.</span>
+              </div>
+            </div>
+
+            <div>
+              {user?.two_factor_enabled ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDisablePassword('');
+                    setDisable2FAError(null);
+                    setIsDisable2FAModalOpen(true);
+                  }}
+                  className="px-5 py-2.5 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition cursor-pointer flex items-center gap-2 shadow-xs"
+                >
+                  <ShieldAlert className="w-4 h-4 text-rose-600" />
+                  <span>Desativar Verificação em Duas Etapas</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleOpen2FASetup}
+                  className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition cursor-pointer flex items-center gap-2 shadow-md active:scale-95"
+                >
+                  <Key className="w-4 h-4" />
+                  <span>Configurar 2FA no Celular (Escanear QR Code)</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Cryptography & Session Card */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-3">
+            <h4 className="font-bold text-sm text-slate-900">Camadas Ativas de Segurança no Painel</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                <span className="font-bold text-slate-800 block">Hash PBKDF2</span>
+                <p className="text-slate-500 text-[11px]">Sua senha nunca é armazenada em texto plano; usa salt exclusivo.</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                <span className="font-bold text-slate-800 block">Anti-Brute Force</span>
+                <p className="text-slate-500 text-[11px]">Limite rígido de requisições por IP e conta de lojista.</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                <span className="font-bold text-slate-800 block">Sessão Segura</span>
+                <p className="text-slate-500 text-[11px]">Tokens criptográficos efêmeros com renovação transparente.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2FA SETUP MODAL FOR MERCHANT */}
+      {is2FAModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-white relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setIs2FAModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white tracking-tight">
+                  Configurar 2FA da Loja: {store.name}
+                </h3>
+                <p className="text-xs text-slate-400">Google Authenticator, Authy ou Apple Passwords</p>
+              </div>
+            </div>
+
+            {twoFactorError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                <span>{twoFactorError}</span>
+              </div>
+            )}
+
+            {twoFactorSuccess && (
+              <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{twoFactorSuccess}</span>
+              </div>
+            )}
+
+            {twoFactorSetupData ? (
+              <form onSubmit={handleConfirm2FAActivation} className="space-y-4 text-xs">
+                {/* Step 1: Scan QR Code */}
+                <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/80 text-center">
+                  <p className="font-bold text-slate-200 mb-2">1. Escaneie este QR Code no aplicativo do seu celular:</p>
+                  <div className="inline-block p-2 bg-white rounded-2xl shadow-md">
+                    <img
+                      src={twoFactorSetupData.qr_code_data_url}
+                      alt="QR Code 2FA"
+                      className="w-48 h-48 mx-auto object-contain rounded-xl"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-2">
+                    Abra o <strong>Google Authenticator</strong> no seu celular, toque em <strong>+</strong> e escolha <strong>Escanear código QR</strong>.
+                  </p>
+                </div>
+
+                {/* Step 2: Secret key manual */}
+                <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
+                  <p className="text-[11px] font-bold text-slate-300 mb-1">Ou digite a chave manualmente:</p>
+                  <div className="flex items-center justify-between gap-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800 font-mono text-[11px] text-amber-300">
+                    <span className="truncate">{twoFactorSetupData.secret}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(twoFactorSetupData.secret);
+                        setCopiedSecret(true);
+                        setTimeout(() => setCopiedSecret(false), 2000);
+                      }}
+                      className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] flex items-center gap-1 cursor-pointer transition shrink-0"
+                    >
+                      {copiedSecret ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedSecret ? 'Copiado!' : 'Copiar'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Step 3: Backup codes */}
+                <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[11px] font-bold text-slate-300">Códigos Reservas de Emergência:</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(twoFactorSetupData.backup_codes.join('\n'));
+                        setCopiedBackupCodes(true);
+                        setTimeout(() => setCopiedBackupCodes(false), 2000);
+                      }}
+                      className="text-[10px] text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedBackupCodes ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedBackupCodes ? 'Códigos Copiados!' : 'Copiar Todos'}</span>
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {twoFactorSetupData.backup_codes.map((code, idx) => (
+                      <div key={idx} className="bg-slate-950 px-2.5 py-1 rounded border border-slate-800/80 font-mono text-[11px] text-slate-300 text-center">
+                        {code}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1.5">
+                    Guarde esses códigos em um local seguro. Cada um permite entrar na conta caso perca o celular.
+                  </p>
+                </div>
+
+                {/* Step 4: Verification code input */}
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1.5">
+                    2. Digite o código de 6 dígitos que apareceu no aplicativo para confirmar:
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      autoFocus
+                      maxLength={6}
+                      value={twoFactorVerifyCode}
+                      onChange={e => setTwoFactorVerifyCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="000000"
+                      className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-center font-mono text-xl tracking-[0.35em] text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIs2FAModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold cursor-pointer transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isActivating2FA || twoFactorVerifyCode.length !== 6}
+                    className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-950 font-black cursor-pointer transition shadow-md flex items-center gap-1.5"
+                  >
+                    {isActivating2FA ? 'Verificando...' : 'Ativar Proteção 2FA'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="py-8 text-center text-slate-400">
+                <span className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin inline-block mb-2" />
+                <p>Gerando chave criptográfica de segurança...</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* DISABLE 2FA MODAL FOR MERCHANT */}
+      {isDisable2FAModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-white relative">
+            <button
+              onClick={() => setIsDisable2FAModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-400">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white tracking-tight">Desativar 2FA</h3>
+                <p className="text-xs text-slate-400">Confirme sua senha de acesso</p>
+              </div>
+            </div>
+
+            {disable2FAError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium">
+                {disable2FAError}
+              </div>
+            )}
+
+            <form onSubmit={handleDisable2FA} className="space-y-4 text-xs">
+              <p className="text-slate-300">
+                Para desativar a autenticação em duas etapas, confirme a sua senha cadastrada:
+              </p>
+              <div>
+                <label className="block text-slate-400 mb-1">Senha atual:</label>
+                <input
+                  type="password"
+                  required
+                  autoFocus
+                  value={disablePassword}
+                  onChange={e => setDisablePassword(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-rose-400"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsDisable2FAModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold cursor-pointer transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isDisabling2FA || !disablePassword}
+                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold cursor-pointer transition"
+                >
+                  {isDisabling2FA ? 'Desativando...' : 'Confirmar e Desativar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* PRODUCT MODAL */}

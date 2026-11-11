@@ -148,7 +148,8 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
       name, category, description, phone, whatsapp, street, number, neighborhood,
       is_open, accepts_pickup, accepts_delivery, delivery_fee_base,
       delivery_time_min, free_delivery_minimum, logo_url, banner_url,
-      slug, theme_color_primary, theme_color_secondary, custom_announcement, instagram
+      slug, theme_color_primary, theme_color_secondary, custom_announcement, instagram,
+      opening_hours_json, neighborhood_fees_json
     } = body || {};
 
     let cleanSlug = slug ? String(slug).toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-') : undefined;
@@ -183,6 +184,8 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
         theme_color_primary = COALESCE(?, theme_color_primary),
         theme_color_secondary = COALESCE(?, theme_color_secondary),
         custom_announcement = COALESCE(?, custom_announcement),
+        opening_hours_json = COALESCE(?, opening_hours_json),
+        neighborhood_fees_json = COALESCE(?, neighborhood_fees_json),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
@@ -195,6 +198,8 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
       free_delivery_minimum !== undefined ? Number(free_delivery_minimum) : null,
       logo_url, banner_url,
       theme_color_primary || null, theme_color_secondary || null, custom_announcement || null,
+      opening_hours_json !== undefined ? (typeof opening_hours_json === 'string' ? opening_hours_json : JSON.stringify(opening_hours_json)) : null,
+      neighborhood_fees_json !== undefined ? (typeof neighborhood_fees_json === 'string' ? neighborhood_fees_json : JSON.stringify(neighborhood_fees_json)) : null,
       store.id
     ).run();
 

@@ -74,6 +74,7 @@ export async function handleOrdersRoutes(req: { method: string; path: string; bo
       SELECT p.*, s.id as store_real_id, s.name as store_name, s.slug as store_slug,
              s.delivery_fee_base, s.free_delivery_minimum, s.commission_rate_override,
              s.street as store_street, s.number as store_number, s.neighborhood as store_neighborhood,
+             s.neighborhood_fees_json,
              s.is_open, s.status as store_status
       FROM products p
       JOIN stores s ON s.id = p.store_id
@@ -148,7 +149,21 @@ export async function handleOrdersRoutes(req: { method: string; path: string; bo
         if (group.store.free_delivery_minimum && storeSubtotal >= group.store.free_delivery_minimum) {
           storeDeliveryFee = 0;
         } else {
-          storeDeliveryFee = Number(group.store.delivery_fee_base) || 7.00;
+          let customFee: number | null = null;
+          if (shipping_address?.neighborhood && group.store.neighborhood_fees_json) {
+            try {
+              const feesObj = typeof group.store.neighborhood_fees_json === 'string'
+                ? JSON.parse(group.store.neighborhood_fees_json)
+                : group.store.neighborhood_fees_json;
+              if (feesObj && feesObj[shipping_address.neighborhood] !== undefined) {
+                const parsedVal = parseFloat(feesObj[shipping_address.neighborhood]);
+                if (!isNaN(parsedVal)) {
+                  customFee = parsedVal;
+                }
+              }
+            } catch {}
+          }
+          storeDeliveryFee = customFee !== null ? customFee : (Number(group.store.delivery_fee_base) || 7.00);
         }
       }
 

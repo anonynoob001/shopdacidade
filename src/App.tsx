@@ -1,5 +1,6 @@
 // Shop da Cidade - Main App Component with Dynamic Theming & Direct Store URLs
 import React, { useEffect, useState } from 'react';
+import { BottomNavigation } from './components/BottomNavigation';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { AuthProvider } from './context/AuthContext';
@@ -175,7 +176,7 @@ function ShopCidadeApp() {
         />
       )}
 
-      <main className="flex-1">
+      <main className="flex-1 pb-16 md:pb-0">
         {currentView === 'home' && (
           <HomePage onNavigate={handleNavigate} selectedNeighborhood={selectedNeighborhood} />
         )}
@@ -246,6 +247,10 @@ function ShopCidadeApp() {
       </main>
 
       {!isStoreDetailPage && <Footer onNavigate={handleNavigate} />}
+
+      {currentView !== 'admin' && (
+        <BottomNavigation currentView={currentView} onNavigate={handleNavigate} />
+      )}
 
       <AuthModal />
 

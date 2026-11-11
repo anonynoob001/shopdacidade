@@ -29,6 +29,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { apiRequest, formatBRL, formatDateBR } from '../services/api';
+import { getStoreStatus } from '../utils/storeSchedule';
 import { Product, Review, Store } from '../worker/types';
 
 interface StoreDetailPageProps {
@@ -170,7 +171,8 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
 
   const primaryColor = store.theme_color_primary || '#fdca04';
   const secondaryColor = store.theme_color_secondary || '#0f172a';
-  const isOpen = store.is_open === 1;
+  const storeStatus = getStoreStatus(store);
+  const isOpen = storeStatus.isOpen;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-950">
@@ -359,12 +361,12 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
                     <CheckCircle className="w-3.5 h-3.5" /> Oficial Canaã
                   </span>
                   <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      isOpen ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                      storeStatus.isOpen ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                     }`}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-                    {isOpen ? 'Aberto Hoje' : 'Fechado no momento'}
+                    <span className={`w-1.5 h-1.5 rounded-full ${storeStatus.isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+                    {storeStatus.statusText} • {storeStatus.scheduleDetail}
                   </span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
