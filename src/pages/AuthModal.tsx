@@ -138,7 +138,7 @@ export const AuthModal: React.FC = () => {
                   value={twoFactorCode}
                   onChange={e => setTwoFactorCode(e.target.value)}
                   placeholder="Ex: 123456 ou XXXX-XXXX"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-center text-lg font-mono font-bold tracking-widest placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 uppercase"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-center text-lg font-mono font-bold tracking-widest placeholder-slate-500 focus:outline-none focus:border-[#0047F7] focus:ring-1 focus:ring-[#0047F7] uppercase"
                 />
                 <KeyRound className="w-5 h-5 text-slate-400 absolute left-3 top-3.5" />
               </div>
@@ -150,7 +150,7 @@ export const AuthModal: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting || !twoFactorCode.trim()}
-              className="w-full mt-2 py-3 rounded-xl bg-amber-400 hover:bg-amber-500 font-black text-slate-950 text-sm shadow-md transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+              className="w-full mt-2 py-3 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] font-black text-white text-sm shadow-lg shadow-orange-950/30 transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
             >
               {isSubmitting ? 'Validando...' : 'Verificar e Entrar'}
             </button>
@@ -176,7 +176,7 @@ export const AuthModal: React.FC = () => {
                 type="button"
                 onClick={() => { setMode('login'); setError(null); }}
                 className={`py-2 rounded-lg transition cursor-pointer font-bold ${
-                  mode === 'login' ? 'bg-amber-400 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
+                  mode === 'login' ? 'bg-[#0047F7] text-white shadow-md' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Já tenho conta
@@ -185,7 +185,7 @@ export const AuthModal: React.FC = () => {
                 type="button"
                 onClick={() => { setMode('register'); setError(null); }}
                 className={`py-2 rounded-lg transition cursor-pointer font-bold ${
-                  mode === 'register' ? 'bg-amber-400 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
+                  mode === 'register' ? 'bg-[#0047F7] text-white shadow-md' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Quero me cadastrar
@@ -208,12 +208,12 @@ export const AuthModal: React.FC = () => {
                             onClick={() => setRole(opt.id)}
                             className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition cursor-pointer ${
                               isSelected
-                                ? 'border-amber-400 bg-amber-400/10 text-white ring-1 ring-amber-400'
+                                ? 'border-[#0047F7] bg-[#0047F7]/15 text-white ring-1 ring-[#0047F7]'
                                 : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:border-slate-700'
                             }`}
                           >
                             <div className="flex items-center gap-1.5">
-                              <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-amber-400' : 'text-slate-400'}`} />
+                              <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-[#FA4802]' : 'text-slate-400'}`} />
                               <span className="font-bold text-[11px] truncate">{opt.title.split('/')[0]}</span>
                             </div>
                             <span className="text-[10px] text-slate-400 leading-tight">{opt.subtitle}</span>
@@ -232,7 +232,7 @@ export const AuthModal: React.FC = () => {
                         value={name}
                         onChange={e => setName(e.target.value)}
                         placeholder="Seu nome ou da sua empresa"
-                        className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                        className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#0047F7] focus:ring-1 focus:ring-[#0047F7]"
                       />
                       <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     </div>
@@ -246,7 +246,7 @@ export const AuthModal: React.FC = () => {
                         value={phone}
                         onChange={e => setPhone(e.target.value)}
                         placeholder="(94) 99123-4567"
-                        className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                        className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#0047F7] focus:ring-1 focus:ring-[#0047F7]"
                       />
                       <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     </div>
@@ -263,7 +263,7 @@ export const AuthModal: React.FC = () => {
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder="seuemail@exemplo.com"
-                    className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#0047F7] focus:ring-1 focus:ring-[#0047F7]"
                   />
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 </div>
@@ -278,7 +278,7 @@ export const AuthModal: React.FC = () => {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder={mode === 'login' ? 'Digite sua senha' : 'Mínimo de 6 caracteres'}
-                    className="w-full pl-9 pr-10 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    className="w-full pl-9 pr-10 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#0047F7] focus:ring-1 focus:ring-[#0047F7]"
                   />
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <button
@@ -294,7 +294,7 @@ export const AuthModal: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full mt-2 py-3 rounded-xl bg-amber-400 hover:bg-amber-500 font-black text-slate-950 text-sm shadow-md transition disabled:opacity-50 cursor-pointer"
+                className="w-full mt-2 py-3 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] font-black text-white text-sm shadow-lg shadow-orange-950/30 transition disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? 'Processando...' : mode === 'login' ? 'Entrar no Shop da Cidade' : 'Concluir Cadastro'}
               </button>

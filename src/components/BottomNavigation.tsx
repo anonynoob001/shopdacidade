@@ -46,7 +46,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentView,
           onClick={() => onNavigate('home')}
           className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer ${
             currentView === 'home'
-              ? 'text-amber-600 font-extrabold scale-105'
+              ? 'text-[#0047F7] font-black scale-105'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -59,7 +59,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentView,
           onClick={() => onNavigate('stores')}
           className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer ${
             currentView === 'stores' || currentView === 'store-detail'
-              ? 'text-amber-600 font-extrabold scale-105'
+              ? 'text-[#0047F7] font-black scale-105'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -72,7 +72,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentView,
           onClick={() => onNavigate('services')}
           className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer ${
             currentView === 'services' || currentView === 'provider-detail'
-              ? 'text-amber-600 font-extrabold scale-105'
+              ? 'text-[#0047F7] font-black scale-105'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -85,14 +85,14 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentView,
           onClick={() => onNavigate('cart')}
           className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer relative ${
             currentView === 'cart'
-              ? 'text-amber-600 font-extrabold scale-105'
+              ? 'text-[#0047F7] font-black scale-105'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <div className="relative">
             <ShoppingBag className={`w-5 h-5 ${currentView === 'cart' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
             {totalItemCount > 0 && (
-              <span className="absolute -top-1.5 -right-2 bg-amber-500 text-slate-950 font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white animate-in zoom-in">
+              <span className="absolute -top-1.5 -right-2 bg-[#FA4802] text-white font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white animate-in zoom-in">
                 {totalItemCount > 9 ? '9+' : totalItemCount}
               </span>
             )}
@@ -105,7 +105,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentView,
           onClick={handleProfileClick}
           className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer ${
             isProfileActive
-              ? 'text-amber-600 font-extrabold scale-105'
+              ? 'text-[#0047F7] font-black scale-105'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >

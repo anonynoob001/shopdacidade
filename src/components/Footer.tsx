@@ -29,15 +29,15 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               {settings.site_tagline || 'O shopping virtual da sua cidade'}. Desenvolvido para conectar moradores, comércios locais, prestadores de serviços e entregadores autônomos de {settings.city_name || 'Canaã dos Carajás'} — {settings.city_state || 'PA'}.
             </p>
             <div className="flex items-center gap-2 text-xs text-slate-300">
-              <MapPin style={{ color: settings.primary_color || '#fdca04' }} className="w-4 h-4 shrink-0" />
+              <MapPin style={{ color: settings.primary_color || '#0047F7' }} className="w-4 h-4 shrink-0" />
               <span>{settings.city_name || 'Canaã dos Carajás'}, {settings.city_state || 'PA'}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-300">
-              <Phone style={{ color: settings.primary_color || '#fdca04' }} className="w-4 h-4 shrink-0" />
+              <Phone style={{ color: settings.primary_color || '#0047F7' }} className="w-4 h-4 shrink-0" />
               <span>WhatsApp Oficial: {settings.official_whatsapp || '(94) 99123-4567'}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-300">
-              <Mail style={{ color: settings.primary_color || '#fdca04' }} className="w-4 h-4 shrink-0" />
+              <Mail style={{ color: settings.primary_color || '#0047F7' }} className="w-4 h-4 shrink-0" />
               <span>{settings.official_email || 'atendimento@shopdacidade.com.br'}</span>
             </div>
           </div>
@@ -47,22 +47,22 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <h4 className="text-xs font-bold text-white uppercase tracking-wider">Comprar</h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <button onClick={() => onNavigate('stores')} className="hover:text-emerald-400 transition cursor-pointer">
+                <button onClick={() => onNavigate('stores')} className="hover:text-[#FA4802] transition cursor-pointer">
                   Lojas Locais
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('products')} className="hover:text-emerald-400 transition cursor-pointer">
+                <button onClick={() => onNavigate('products')} className="hover:text-[#FA4802] transition cursor-pointer">
                   Catálogo de Produtos
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('cart')} className="hover:text-emerald-400 transition cursor-pointer">
+                <button onClick={() => onNavigate('cart')} className="hover:text-[#FA4802] transition cursor-pointer">
                   Meu Carrinho
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('my-orders')} className="hover:text-emerald-400 transition cursor-pointer">
+                <button onClick={() => onNavigate('my-orders')} className="hover:text-[#FA4802] transition cursor-pointer">
                   Acompanhar Pedidos
                 </button>
               </li>
@@ -74,22 +74,22 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <h4 className="text-xs font-bold text-white uppercase tracking-wider">Serviços</h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <button onClick={() => onNavigate('services')} className="hover:text-emerald-400 transition cursor-pointer">
+                <button onClick={() => onNavigate('services')} className="hover:text-[#FA4802] transition cursor-pointer">
                   Todos os Prestadores
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('services')} className="hover:text-emerald-400 transition cursor-pointer">
+                <button onClick={() => onNavigate('services')} className="hover:text-[#FA4802] transition cursor-pointer">
                   Climatização & Ar
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('services')} className="hover:text-emerald-400 transition cursor-pointer">
+                <button onClick={() => onNavigate('services')} className="hover:text-[#FA4802] transition cursor-pointer">
                   Eletricistas & Padrão
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('my-quotes')} className="hover:text-emerald-400 transition cursor-pointer">
+                <button onClick={() => onNavigate('my-quotes')} className="hover:text-[#FA4802] transition cursor-pointer">
                   Solicitar Orçamento
                 </button>
               </li>
@@ -101,17 +101,17 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <h4 className="text-xs font-bold text-white uppercase tracking-wider">Parceiros</h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <button onClick={() => onNavigate('partner-register')} className="text-emerald-400 hover:text-emerald-300 font-semibold transition cursor-pointer">
+                <button onClick={() => onNavigate('partner-register')} className="text-[#FA4802] hover:text-orange-400 font-semibold transition cursor-pointer">
                   Cadastrar minha Loja
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('partner-register')} className="text-emerald-400 hover:text-emerald-300 font-semibold transition cursor-pointer">
+                <button onClick={() => onNavigate('partner-register')} className="text-[#FA4802] hover:text-orange-400 font-semibold transition cursor-pointer">
                   Anunciar Meus Serviços
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('courier')} className="hover:text-emerald-400 transition cursor-pointer">
+                <button onClick={() => onNavigate('courier')} className="hover:text-[#FA4802] transition cursor-pointer">
                   Painel de Entregadores
                 </button>
               </li>
@@ -122,7 +122,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         {/* Legal & LGPD Compliance Note */}
         <div className="mt-12 pt-6 border-t border-slate-900 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <ShieldCheck className="w-4 h-4 text-[#0047F7]" />
             <span>Plataforma em conformidade com a LGPD (Lei Geral de Proteção de Dados - Brasil).</span>
           </div>
           <div>

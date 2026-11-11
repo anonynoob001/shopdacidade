@@ -1,56 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --color-theme-primary: #fdca04;
-  --color-theme-secondary: #0f172a;
-  --color-theme-accent: #f59e0b;
+  --color-theme-primary: #0047F7;
+  --color-theme-secondary: #071536;
+  --color-theme-accent: #FA4802;
 }
 
-/* Dynamic theme overrides to synchronize colors with Super Admin customizer */
-.theme-primary-bg,
-.bg-amber-400,
-.bg-amber-500,
-.bg-amber-600 {
+/* Dynamic theme classes for platform-wide consistency */
+.theme-primary-bg {
   background-color: var(--color-theme-primary) !important;
 }
 
-.theme-primary-text,
-.text-amber-300,
-.text-amber-400,
-.text-amber-500,
-.text-amber-600 {
+.theme-primary-text {
   color: var(--color-theme-primary) !important;
 }
 
-.theme-primary-border,
-.border-amber-400,
-.border-amber-500,
-.border-amber-600 {
+.theme-primary-border {
   border-color: var(--color-theme-primary) !important;
 }
 
-.hover\:bg-amber-400:hover,
-.hover\:bg-amber-500:hover,
-.hover\:bg-amber-600:hover,
-.hover\:bg-amber-700:hover {
-  background-color: var(--color-theme-accent, var(--color-theme-primary)) !important;
+.theme-accent-bg {
+  background-color: var(--color-theme-accent) !important;
 }
 
-.hover\:text-amber-300:hover,
-.hover\:text-amber-400:hover,
-.hover\:text-amber-500:hover {
-  color: var(--color-theme-accent, var(--color-theme-primary)) !important;
+.theme-accent-text {
+  color: var(--color-theme-accent) !important;
 }
 
-.theme-secondary-bg,
-.bg-slate-900 {
+.theme-secondary-bg {
   background-color: var(--color-theme-secondary) !important;
-}
-
-.bg-slate-950 {
-  background-color: color-mix(in srgb, var(--color-theme-secondary) 80%, black 20%) !important;
-}
-
-.border-slate-800 {
-  border-color: color-mix(in srgb, var(--color-theme-secondary) 70%, white 30%) !important;
 }

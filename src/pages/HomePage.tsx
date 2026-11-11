@@ -178,48 +178,48 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
     <div className="space-y-12 pb-16">
       {/* 1. Hero Banner Carousel / Promo */}
       {currentBanner && (
-        <section className="relative overflow-hidden bg-slate-900 border-b border-slate-800">
+        <section className="relative overflow-hidden bg-gradient-to-br from-[#071536] via-[#091f5a] to-[#0047F7] border-b border-blue-900/40 text-white">
           <div className="max-w-7xl mx-auto px-4 py-12 md:py-16 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div className="space-y-5 z-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FA4802]/20 border border-[#FA4802]/40 text-[#FA4802] text-xs font-black tracking-wide">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Marketplace Regional • Canaã dos Carajás, PA</span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
                 {currentBanner.title}
               </h1>
-              <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
+              <p className="text-sm sm:text-base text-slate-200 leading-relaxed max-w-xl font-normal">
                 {currentBanner.subtitle || 'Tudo o que você precisa no comércio de Canaã dos Carajás: materiais, alimentos, peças e profissionais de confiança com agendamento online.'}
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <button
                   onClick={() => onNavigate('stores')}
-                  className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-950/50 flex items-center gap-2 transition active:scale-95 cursor-pointer"
+                  className="px-6 py-3.5 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] text-white font-black text-sm shadow-xl shadow-orange-950/40 flex items-center gap-2 transition active:scale-95 cursor-pointer"
                 >
                   <StoreIcon className="w-4 h-4" />
                   Ver Lojas em Canaã
                 </button>
                 <button
                   onClick={() => onNavigate('services')}
-                  className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-sm flex items-center gap-2 transition cursor-pointer"
+                  className="px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-sm flex items-center gap-2 transition cursor-pointer"
                 >
-                  <Wrench className="w-4 h-4 text-teal-400" />
+                  <Wrench className="w-4 h-4 text-[#FA4802]" />
                   Contratar Serviços
                 </button>
               </div>
             </div>
 
             <div className="relative">
-              <div className="relative rounded-2xl overflow-hidden aspect-16/10 shadow-2xl border border-slate-800">
+              <div className="relative rounded-2xl overflow-hidden aspect-16/10 shadow-2xl border border-white/15">
                 <img
                   src={currentBanner.image_url}
                   alt={currentBanner.title}
                   className="w-full h-full object-cover transition duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-6">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#071536]/90 via-transparent to-transparent flex items-end p-6">
                   <div className="text-white text-xs">
-                    <span className="font-semibold text-emerald-400">Entrega rápida em Canaã dos Carajás</span>
-                    <p className="text-slate-300">Receba no Centro, Novo Horizonte, Alto Bonito e demais bairros.</p>
+                    <span className="font-extrabold text-[#FA4802] block text-sm">Entrega rápida em Canaã dos Carajás</span>
+                    <p className="text-slate-200">Receba no Centro, Novo Horizonte, Alto Bonito e demais bairros.</p>
                   </div>
                 </div>
               </div>
@@ -231,8 +231,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
                     <button
                       key={idx}
                       onClick={() => setActiveBannerIndex(idx)}
-                      className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                        idx === activeBannerIndex ? 'w-6 bg-emerald-400' : 'w-2 bg-slate-700 hover:bg-slate-600'
+                      className={`h-2 rounded-full transition-all cursor-pointer ${
+                        idx === activeBannerIndex ? 'w-7 bg-[#FA4802]' : 'w-2 bg-white/30 hover:bg-white/50'
                       }`}
                       aria-label={`Banner ${idx + 1}`}
                     />
@@ -265,11 +265,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#0047F7] animate-pulse" />
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                   Categorias
                 </h2>
-                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold uppercase tracking-wide">
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0047F7] text-[10px] font-black uppercase tracking-wide border border-blue-100">
                   Segmentos
                 </span>
               </div>
@@ -289,9 +289,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
               )}
               <button
                 onClick={() => onNavigate('stores', selectedCategory || undefined)}
-                className="text-xs sm:text-sm font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
+                className="text-xs sm:text-sm font-bold text-[#0047F7] hover:text-blue-800 flex items-center gap-1 cursor-pointer"
               >
-                Ver diretório de lojas <ArrowRight className="w-4 h-4" />
+                Ver diretório de lojas <ArrowRight className="w-4 h-4 text-[#FA4802]" />
               </button>
             </div>
           </div>
@@ -310,11 +310,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-2.5">
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                 {selectedCategory ? `Lojas Ativas em ${selectedCategory}` : 'Lojas Parceiras em Canaã'}
               </h2>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping" />
+              <span className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[#0047F7] text-xs font-black flex items-center gap-1.5 shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0047F7] animate-ping" />
                 {displayedStores.length} {displayedStores.length === 1 ? 'loja ativa' : 'lojas ativas'}
               </span>
             </div>
@@ -404,10 +404,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
                         className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow -mt-8 shrink-0 bg-white"
                       />
                       <div className="flex-1">
-                        <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md inline-block">
+                        <span className="text-[10px] font-bold text-[#0047F7] uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded-md inline-block">
                           {store.category}
                         </span>
-                        <h3 className="font-bold text-base text-slate-900 group-hover:text-emerald-700 transition leading-snug mt-1">
+                        <h3 className="font-bold text-base text-slate-900 group-hover:text-[#0047F7] transition leading-snug mt-1">
                           {store.name}
                         </h3>
                       </div>
@@ -430,7 +430,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
 
                   <button
                     onClick={() => onNavigate('store-detail', store.slug)}
-                    className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98"
+                    className="w-full py-2.5 rounded-xl bg-[#0047F7] hover:bg-[#0038c7] text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-500/20 active:scale-98"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     Ver Loja e Produtos
@@ -443,24 +443,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
       </section>
 
       {/* 4. Serviços Profissionais de Canaã dos Carajás */}
-      <section className="bg-slate-900 py-12 text-white border-y border-slate-800">
+      <section className="bg-[#071536] py-12 text-white border-y border-[#0047F7]/20">
         <div className="max-w-7xl mx-auto px-4 space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 text-xs font-semibold mb-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FA4802]/20 text-[#FA4802] text-xs font-bold mb-2">
                 <Wrench className="w-3.5 h-3.5" />
                 <span>Mão de Obra & Assistência Técnica</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                 Prestadores de Serviços em Canaã
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400 max-w-xl">
+              <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
                 Ar-condicionado, eletricistas, encanadores, diaristas e reformas. Peça orçamento formal sem intermediários caros.
               </p>
             </div>
             <button
               onClick={() => onNavigate('services')}
-              className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1.5 transition self-start md:self-auto cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[#0047F7] hover:bg-[#0038c7] text-white text-xs font-bold flex items-center gap-1.5 transition self-start md:self-auto cursor-pointer shadow-md shadow-blue-500/20"
             >
               Ver todos os prestadores <ArrowRight className="w-4 h-4" />
             </button>
@@ -470,14 +470,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
             {data.featuredProviders.map(prov => (
               <div
                 key={prov.id}
-                className="bg-slate-800/90 rounded-2xl border border-slate-700/80 p-5 flex flex-col justify-between hover:border-teal-500 transition space-y-4"
+                className="bg-[#0b1c44] rounded-2xl border border-slate-700/80 p-5 flex flex-col justify-between hover:border-[#0047F7] transition space-y-4"
               >
                 <div>
                   <div className="flex items-start gap-3">
                     <img
                       src={prov.photo_url || 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=120&h=120&fit=crop&q=80'}
                       alt={prov.business_name}
-                      className="w-14 h-14 rounded-2xl object-cover border-2 border-teal-500/40 shrink-0"
+                      className="w-14 h-14 rounded-2xl object-cover border-2 border-[#0047F7]/40 shrink-0"
                     />
                     <div>
                       <div className="flex items-center gap-1">
@@ -490,7 +490,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
                       <h3 className="font-bold text-base text-white mt-0.5 leading-snug">
                         {prov.business_name}
                       </h3>
-                      <p className="text-xs text-teal-400 font-medium">{prov.category_name}</p>
+                      <p className="text-xs text-[#FA4802] font-semibold">{prov.category_name}</p>
                     </div>
                   </div>
 
@@ -508,7 +508,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
                   </div>
                   <button
                     onClick={() => onNavigate('provider-detail', prov.slug)}
-                    className="px-3 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                    className="px-3 py-2 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-orange-950/30"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
                     Pedir Orçamento
@@ -523,13 +523,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
       {/* 6. Empresas Patrocinadoras & Apoio Local */}
       {data.localAds && data.localAds.length > 0 && (
         <section className="max-w-7xl mx-auto px-4">
-          <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-950 text-white border border-slate-800">
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-[#071536] to-[#0a1b42] text-white border border-[#0047F7]/30">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Apoio ao Comércio Regional</span>
+                <span className="text-[10px] font-bold text-[#FA4802] uppercase tracking-widest">Apoio ao Comércio Regional</span>
                 <h3 className="text-base font-bold text-white">Empresas Patrocinadoras de Canaã dos Carajás</h3>
               </div>
-              <span className="text-[10px] text-slate-500">Espaço Publicitário Local</span>
+              <span className="text-[10px] text-slate-400">Espaço Publicitário Local</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -554,9 +554,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
       {/* 7. Call To Action para Parceiros Locais */}
       <section className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-8 rounded-3xl bg-emerald-900/20 border border-emerald-800/40 flex flex-col justify-between space-y-6">
+          <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-50/90 via-white to-blue-50/40 border border-blue-200/80 flex flex-col justify-between space-y-6 shadow-sm">
             <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow">
+              <div className="w-12 h-12 rounded-2xl bg-[#0047F7] text-white flex items-center justify-center shadow-lg shadow-blue-500/30">
                 <StoreIcon className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold text-slate-900">Você tem um comércio em Canaã dos Carajás?</h3>
@@ -566,15 +566,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
             </div>
             <button
               onClick={() => onNavigate('partner-register')}
-              className="py-3 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm self-start transition cursor-pointer"
+              className="py-3 px-5 rounded-xl bg-[#0047F7] hover:bg-[#0038c7] text-white font-black text-xs sm:text-sm self-start transition cursor-pointer shadow-md shadow-blue-500/20"
             >
               Cadastrar Minha Loja Gratuitamente
             </button>
           </div>
 
-          <div className="p-8 rounded-3xl bg-teal-900/20 border border-teal-800/40 flex flex-col justify-between space-y-6">
+          <div className="p-8 rounded-3xl bg-gradient-to-br from-orange-50/90 via-white to-orange-50/40 border border-orange-200/80 flex flex-col justify-between space-y-6 shadow-sm">
             <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-teal-600 text-white flex items-center justify-center shadow">
+              <div className="w-12 h-12 rounded-2xl bg-[#FA4802] text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
                 <Wrench className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold text-slate-900">Oferece serviços profissionais?</h3>
@@ -584,7 +584,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
             </div>
             <button
               onClick={() => onNavigate('partner-register')}
-              className="py-3 px-5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm self-start transition cursor-pointer"
+              className="py-3 px-5 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] text-white font-black text-xs sm:text-sm self-start transition cursor-pointer shadow-md shadow-orange-500/20"
             >
               Anunciar Meus Serviços
             </button>

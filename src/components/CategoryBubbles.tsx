@@ -116,20 +116,20 @@ export const CategoryBubbles: React.FC<CategoryBubblesProps> = ({
             onClick={() => onSelectCategory(null)}
             className={`group shrink-0 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-200 cursor-pointer snap-start border text-xs font-bold ${
               isAllSelected
-                ? 'bg-slate-900 border-slate-900 text-amber-400 shadow-md ring-2 ring-amber-400/40'
-                : 'bg-white border-slate-200 text-slate-700 hover:border-amber-400 hover:text-slate-900'
+                ? 'bg-[#0047F7] border-[#0047F7] text-white shadow-md ring-2 ring-[#0047F7]/30'
+                : 'bg-white border-slate-200 text-slate-700 hover:border-[#0047F7] hover:text-[#0047F7]'
             }`}
           >
             <div
               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
-                isAllSelected ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-100 text-slate-600 group-hover:bg-amber-100 group-hover:text-amber-800'
+                isAllSelected ? 'bg-[#FA4802] text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-[#0047F7]'
               }`}
             >
               <Layers className="w-4 h-4" />
             </div>
             <div className="text-left">
               <span className="block leading-tight">Todas as Lojas</span>
-              <span className={`text-[10px] ${isAllSelected ? 'text-amber-300' : 'text-slate-400'}`}>
+              <span className={`text-[10px] ${isAllSelected ? 'text-blue-100' : 'text-slate-400'}`}>
                 Ver tudo
               </span>
             </div>
@@ -148,20 +148,20 @@ export const CategoryBubbles: React.FC<CategoryBubblesProps> = ({
               onClick={() => onSelectCategory(active ? null : cat)}
               className={`group shrink-0 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-200 cursor-pointer snap-start border text-xs font-bold ${
                 active
-                  ? 'bg-slate-900 border-slate-900 text-amber-400 shadow-md ring-2 ring-amber-400/40 scale-102'
-                  : 'bg-white border-slate-200 text-slate-700 hover:border-amber-400 hover:text-slate-900'
+                  ? 'bg-[#0047F7] border-[#0047F7] text-white shadow-md ring-2 ring-[#0047F7]/30 scale-102'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-[#0047F7] hover:text-[#0047F7]'
               }`}
             >
               <div
                 className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
-                  active ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-100 text-slate-600 group-hover:bg-amber-100 group-hover:text-amber-800'
+                  active ? 'bg-[#FA4802] text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-[#0047F7]'
                 }`}
               >
                 {renderCategoryIcon(cat.icon, cat.name)}
               </div>
               <div className="text-left">
                 <span className="block leading-tight">{cat.name}</span>
-                <span className={`text-[10px] ${active ? 'text-amber-300' : 'text-slate-400'}`}>
+                <span className={`text-[10px] ${active ? 'text-blue-100' : 'text-slate-400'}`}>
                   {count} {count === 1 ? 'loja' : 'lojas'}
                 </span>
               </div>

@@ -31,9 +31,9 @@ const DEFAULT_SETTINGS: SiteSettings = {
   site_tagline: 'O Shopping Virtual da Sua Cidade',
   city_name: 'Canaã dos Carajás',
   city_state: 'PA',
-  primary_color: '#fdca04', // Vibrant Gold/Yellow extracted from logo
-  secondary_color: '#0f172a', // Rich Dark Slate from logo
-  accent_color: '#f59e0b',
+  primary_color: '#0047F7', // Vibrant Electric Cobalt Blue
+  secondary_color: '#071536', // Deep Obsidian Navy
+  accent_color: '#FA4802', // Electric Orange / High-Conversion Vermilion
   official_whatsapp: '(94) 99123-4567',
   official_email: 'atendimento@shopdacidade.com.br',
   banner_notice: 'Bem-vindo ao Shop da Cidade! Conectando você às melhores lojas e prestadores de Canaã dos Carajás - PA.',
@@ -73,9 +73,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const applyThemeVariables = (s: SiteSettings) => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
-    const primary = s.primary_color || '#fdca04';
-    const secondary = s.secondary_color || '#0f172a';
-    const accent = s.accent_color || '#f59e0b';
+    const primary = s.primary_color || '#0047F7';
+    const secondary = s.secondary_color || '#071536';
+    const accent = s.accent_color || '#FA4802';
 
     root.style.setProperty('--color-theme-primary', primary);
     root.style.setProperty('--color-theme-secondary', secondary);
