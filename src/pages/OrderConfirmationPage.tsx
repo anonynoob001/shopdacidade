@@ -11,6 +11,7 @@ import {
   Truck
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { apiRequest, formatBRL, formatDateBR } from '../services/api';
 import { Order } from '../worker/types';
 import { OrderTrackingTimeline } from '../components/OrderTrackingTimeline';
@@ -21,6 +22,7 @@ interface OrderConfirmationPageProps {
 }
 
 export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ orderCode, onNavigate }) => {
+  const { user } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -43,7 +45,16 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ or
 
   useEffect(() => {
     fetchOrder();
-  }, [orderCode]);
+
+    // Auto-poll order payment status every 4 seconds until confirmed
+    const interval = setInterval(() => {
+      if (!pixConfirmed) {
+        fetchOrder();
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [orderCode, pixConfirmed]);
 
   const handleCopyPix = () => {
     if (order?.pix_code) {
@@ -132,24 +143,36 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ or
               />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-1">
-              <button
-                onClick={handleCopyPix}
-                className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow transition active:scale-95 cursor-pointer"
-              >
-                <Copy className="w-4 h-4" />
-                {copied ? 'Código PIX Copiado!' : 'Copiar Código PIX'}
-              </button>
+            <div className="space-y-3 pt-1">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handleCopyPix}
+                  className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow transition active:scale-95 cursor-pointer"
+                >
+                  <Copy className="w-4 h-4" />
+                  {copied ? 'Código PIX Copiado!' : 'Copiar Código PIX'}
+                </button>
 
-              <button
-                onClick={handleSimulatePixConfirm}
-                disabled={confirmingPix}
-                className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-700 transition cursor-pointer"
-                title="Simula o recebimento do webhook bancário instantâneo"
-              >
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                {confirmingPix ? 'Confirmando...' : 'Confirmar Pagamento PIX'}
-              </button>
+                {user && (user.role === 'admin' || user.role === 'superadmin') && (
+                  <button
+                    onClick={handleSimulatePixConfirm}
+                    disabled={confirmingPix}
+                    className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-700 transition cursor-pointer"
+                    title="Ação restrita a administradores do Shop da Cidade"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    {confirmingPix ? 'Confirmando...' : 'Admin: Confirmar Pagamento'}
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2.5 text-[11px] text-slate-300 bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </div>
+                <span>Detecção bancária ativa em tempo real. Esta tela atualiza automaticamente assim que o pagamento for concluído.</span>
+              </div>
             </div>
           </div>
         )}

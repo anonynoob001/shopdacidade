@@ -13,6 +13,15 @@ export interface VainabagOrderPayload {
   order_id: string;
   customer_name: string;
   customer_phone: string;
+  pickup_address?: {
+    store_name: string;
+    phone?: string;
+    street?: string;
+    number?: string;
+    neighborhood: string;
+    city?: string;
+    state?: string;
+  };
   delivery_address: {
     street: string;
     number: string;
@@ -34,8 +43,8 @@ export interface VainabagOrderPayload {
 
 const VAINABAG_API_BASE = 'https://api-pro.vainabag.com.br/integrations/v1';
 
-// In-memory token cache to avoid requesting token on every call
-let cachedToken: { token: string; expiresAt: number } | null = null;
+// In-memory token cache scoped by client_id + environment
+let cachedToken: { cacheKey: string; token: string; expiresAt: number } | null = null;
 
 export class VainabagService {
   private clientId: string;
@@ -58,7 +67,8 @@ export class VainabagService {
    * Request OAuth2 Bearer token with client_credentials grant
    */
   async getAccessToken(): Promise<string> {
-    if (cachedToken && cachedToken.expiresAt > Date.now() + 60000) {
+    const cacheKey = `${this.clientId}:${this.isTest ? 'test' : 'prod'}`;
+    if (cachedToken && cachedToken.cacheKey === cacheKey && cachedToken.expiresAt > Date.now() + 60000) {
       return cachedToken.token;
     }
 
@@ -91,6 +101,7 @@ export class VainabagService {
 
     const data = await response.json() as { access_token: string; expires_in: number };
     cachedToken = {
+      cacheKey,
       token: data.access_token,
       expiresAt: Date.now() + (data.expires_in || 3600) * 1000
     };
@@ -167,7 +178,7 @@ export class VainabagService {
       headers['X-Vainabag-Store'] = this.storeCode;
     }
 
-    const body = {
+    const body: Record<string, any> = {
       external_order_id: payload.order_id,
       recipient: {
         name: payload.customer_name,
@@ -177,6 +188,7 @@ export class VainabagService {
         neighborhood: payload.delivery_address.neighborhood,
         city: payload.delivery_address.city || 'Canaã dos Carajás',
         state: payload.delivery_address.state || 'PA',
+        zip_code: payload.delivery_address.zip_code || '68537-000',
         complement: payload.delivery_address.complement || ''
       },
       items: payload.items,
@@ -184,6 +196,18 @@ export class VainabagService {
       payment_method: payload.payment_method,
       test: this.isTest
     };
+
+    if (payload.pickup_address) {
+      body.pickup = {
+        store_name: payload.pickup_address.store_name,
+        phone: payload.pickup_address.phone || '',
+        street: payload.pickup_address.street || '',
+        number: payload.pickup_address.number || 'S/N',
+        neighborhood: payload.pickup_address.neighborhood,
+        city: payload.pickup_address.city || 'Canaã dos Carajás',
+        state: payload.pickup_address.state || 'PA'
+      };
+    }
 
     const response = await fetch(`${VAINABAG_API_BASE}/orders`, {
       method: 'POST',

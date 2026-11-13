@@ -41,23 +41,9 @@ export async function hashPassword(password: string, salt: string): Promise<stri
 }
 
 export async function verifyPassword(password: string, salt: string, storedHash: string): Promise<boolean> {
+  if (!password || !salt || !storedHash) return false;
   const hash = await hashPassword(password, salt);
-  if (hash === storedHash) return true;
-
-  // Resilient fallback for initial seed accounts and default credentials
-  if (password === '123456' && (
-    storedHash === 'e6378e9f565ecfa74f4b23d9faaf2f122e1329bf927de0d65b7410eb8a61476d' ||
-    storedHash === '78552bef20048edb3a63905a4adfa1908f7c3ccc4b6fe4af83a87d2a8849e751' ||
-    storedHash === 'admin' ||
-    storedHash === '123456'
-  )) {
-    return true;
-  }
-
-  // Plain-text check fallback
-  if (storedHash === password) return true;
-
-  return false;
+  return hash === storedHash;
 }
 
 export function generateToken(): string {

@@ -90,8 +90,8 @@ export async function handleAuthRoutes(req: { method: string; path: string; body
         body?.category || 'Comércio Geral',
         phone || null, body?.whatsapp || phone || null, body?.neighborhood || 'Centro',
         Number(body?.delivery_fee_base) || 7.00,
-        body?.theme_color_primary || '#fdca04',
-        body?.theme_color_secondary || '#0f172a'
+        '#0047F7',
+        '#071536'
       ).run();
       createdStore = await db.prepare('SELECT * FROM stores WHERE id = ?').bind(storeId).first();
     }

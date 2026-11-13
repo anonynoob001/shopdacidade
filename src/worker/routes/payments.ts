@@ -222,12 +222,21 @@ export async function handlePaymentsRoutes(
     }
   }
 
-  // 6. POST /api/payments/webhook - Asaas Webhook receiver
+  // 6. POST /api/payments/webhook - Asaas Webhook receiver with token verification
   if (method === 'POST' && path === '/api/payments/webhook') {
+    const config = await getAsaasConfig(db);
+    const incomingToken = headers?.['asaas-access-token'] || headers?.['Asaas-Access-Token'] || headers?.['asaas_access_token'];
+
+    // Enforce webhook authentication if token configured
+    if (config.webhookToken && incomingToken !== config.webhookToken) {
+      console.warn('[Asaas Webhook] Tentativa rejeitada: token de webhook inválido ou ausente.');
+      return { status: 401, data: { error: 'Token de autenticação do webhook Asaas não autorizado.' } };
+    }
+
     const event = body?.event;
     const payment = body?.payment;
 
-    console.log(`[Asaas Webhook] Evento recebido: ${event}`, payment?.id, payment?.externalReference);
+    console.log(`[Asaas Webhook] Evento recebido autenticado: ${event}`, payment?.id, payment?.externalReference);
 
     if (!payment) {
       return { status: 200, data: { received: true } };
@@ -267,8 +276,12 @@ export async function handlePaymentsRoutes(
     return { status: 200, data: { success: true, processedEvent: event } };
   }
 
-  // 7. POST /api/payments/simulate-success - Development / Demo helper
+  // 7. POST /api/payments/simulate-success - Restricted strictly to administrators for testing
   if (method === 'POST' && path === '/api/payments/simulate-success') {
+    if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
+      return { status: 403, data: { error: 'Acesso negado. Apenas administradores podem simular pagamentos.' } };
+    }
+
     const { orderCode } = body || {};
     if (!orderCode) return { status: 400, data: { error: 'orderCode obrigatório.' } };
 

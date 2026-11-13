@@ -342,9 +342,13 @@ export async function handleOrdersRoutes(req: { method: string; path: string; bo
     return { status: 200, data: { order } };
   }
 
-  // POST /api/orders/:code/confirm-pix (Simulate / process verified payment webhook or confirmation)
+  // POST /api/orders/:code/confirm-pix (Manual confirmation - strictly restricted to authenticated administrators)
   const pixConfirmMatch = path.match(/^\/api\/orders\/([a-zA-Z0-9_-]+)\/confirm-pix$/);
   if (method === 'POST' && pixConfirmMatch) {
+    if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
+      return { status: 403, data: { error: 'Acesso negado. Apenas administradores do Shop da Cidade podem confirmar pagamentos manualmente.' } };
+    }
+
     const code = pixConfirmMatch[1];
     const order = await db.prepare('SELECT * FROM orders WHERE order_code = ? OR id = ?').bind(code, code).first<any>();
 
@@ -355,7 +359,20 @@ export async function handleOrdersRoutes(req: { method: string; path: string; bo
     await db.prepare("UPDATE orders SET payment_status = 'confirmed', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(order.id).run();
     await db.prepare("UPDATE sub_orders SET status = 'preparing', updated_at = CURRENT_TIMESTAMP WHERE order_id = ? AND status = 'pending'").bind(order.id).run();
 
-    return { status: 200, data: { success: true, message: 'Pagamento PIX confirmado com sucesso! Lojas notificadas para preparo.' } };
+    // Register security audit log
+    try {
+      await db.prepare(`
+        INSERT INTO audit_logs (id, user_name, action, entity_type, entity_id, details_json, created_at)
+        VALUES (?, ?, 'MANUAL_PIX_CONFIRM', 'order', ?, ?, CURRENT_TIMESTAMP)
+      `).bind(
+        'log_' + crypto.randomUUID().slice(0, 8),
+        user.name || user.email,
+        order.id,
+        JSON.stringify({ confirmedBy: user.email, userRole: user.role, orderCode: order.order_code })
+      ).run();
+    } catch (_) {}
+
+    return { status: 200, data: { success: true, message: 'Pagamento PIX confirmado com sucesso pelo administrador! Lojas notificadas.' } };
   }
 
   return null;

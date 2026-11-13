@@ -23,7 +23,6 @@ import {
   Megaphone,
   MessageCircle,
   Package,
-  Palette,
   Phone,
   Plus,
   Printer,
@@ -55,16 +54,6 @@ import { Product, Store, SubOrder } from '../worker/types';
 interface MerchantDashboardProps {
   onNavigate: (view: string, param?: string) => void;
 }
-
-const COLOR_PRESETS = [
-  { name: 'Ouro Shop da Cidade', primary: '#fdca04', secondary: '#0f172a' },
-  { name: 'Verde Esmeralda', primary: '#10b981', secondary: '#064e3b' },
-  { name: 'Azul Real', primary: '#2563eb', secondary: '#1e1b4b' },
-  { name: 'Laranja Vibrante', primary: '#f97316', secondary: '#431407' },
-  { name: 'Rubi Elegante', primary: '#e11d48', secondary: '#4c0519' },
-  { name: 'Roxo Moderno', primary: '#8b5cf6', secondary: '#2e1065' },
-  { name: 'Dark Grafite', primary: '#38bdf8', secondary: '#020617' }
-];
 
 const STORE_LOGO_PRESETS = [
   { name: 'Mercado & Alimentos', url: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=300&h=300&fit=crop&q=80' },
@@ -196,8 +185,6 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
     free_delivery_minimum: '150.00',
     delivery_time_min: '30-50 min',
     is_open: true,
-    theme_color_primary: '#fdca04',
-    theme_color_secondary: '#0f172a',
     custom_announcement: '',
     logo_url: '',
     banner_url: ''
@@ -235,8 +222,6 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
           free_delivery_minimum: storeRes.store.free_delivery_minimum?.toString() || '150.00',
           delivery_time_min: storeRes.store.delivery_time_min || '30-50 min',
           is_open: !!storeRes.store.is_open,
-          theme_color_primary: storeRes.store.theme_color_primary || '#fdca04',
-          theme_color_secondary: storeRes.store.theme_color_secondary || '#0f172a',
           custom_announcement: storeRes.store.custom_announcement || '',
           logo_url: storeRes.store.logo_url || '',
           banner_url: storeRes.store.banner_url || ''
@@ -648,9 +633,6 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
     );
   }
 
-  const primaryTheme = store.theme_color_primary || '#fdca04';
-  const secondaryTheme = store.theme_color_secondary || '#0f172a';
-
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
       {/* Top Bar */}
@@ -664,7 +646,7 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
           </button>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              Painel do Lojista: <span style={{ color: primaryTheme === '#fdca04' ? '#d97706' : primaryTheme }}>{store.name}</span>
+              Painel do Lojista: <span className="text-[#0047F7]">{store.name}</span>
             </h1>
             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
               store.is_open ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
@@ -715,10 +697,7 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
               className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-4 border-slate-900 shadow-xl bg-slate-800 shrink-0"
             />
             <div className="text-white space-y-0.5">
-              <span
-                style={{ backgroundColor: `${primaryTheme}25`, color: primaryTheme, borderColor: `${primaryTheme}50` }}
-                className="px-2.5 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-wider inline-block mb-0.5"
-              >
+              <span className="px-2.5 py-0.5 rounded-full bg-[#0047F7]/25 text-blue-300 border border-blue-400/40 text-[10px] font-black uppercase tracking-wider inline-block mb-0.5">
                 Loja Oficial
               </span>
               <h3 className="font-black text-base sm:text-lg leading-tight">{store.name}</h3>
@@ -1448,10 +1427,7 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
                     className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-3 border-slate-900 shadow-xl bg-slate-800 shrink-0"
                   />
                   <div className="text-white space-y-0.5">
-                    <span
-                      style={{ backgroundColor: `${settingsForm.theme_color_primary}30`, color: settingsForm.theme_color_primary }}
-                      className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border border-white/10"
-                    >
+                    <span className="px-2 py-0.5 rounded-full bg-[#0047F7]/30 text-blue-300 text-[9px] font-black uppercase tracking-wider border border-blue-400/30">
                       Loja Oficial
                     </span>
                     <h4 className="font-extrabold text-sm sm:text-base leading-tight">
@@ -1466,86 +1442,21 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
             </div>
           </div>
 
-          {/* Section: Visual Customizer */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5">
+          {/* Section: Promotional Announcement */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
             <div className="flex items-center gap-2">
-              <Palette className="w-5 h-5 text-amber-500" />
+              <Megaphone className="w-5 h-5 text-[#0047F7]" />
               <div>
-                <h3 className="text-base font-black text-slate-900 tracking-tight">Personalização Visual da Sua Loja</h3>
+                <h3 className="text-base font-black text-slate-900 tracking-tight">Aviso Promocional no Topo da Loja</h3>
                 <p className="text-xs text-slate-500">
-                  Defina a identidade visual única que seus clientes verão na página da sua loja (<code className="font-mono text-amber-700">/loja/{settingsForm.slug}</code>).
+                  Destaque promoções ou condições de entrega no cabeçalho oficial da sua loja (<code className="font-mono text-[#0047F7]">/loja/{settingsForm.slug}</code>).
                 </p>
               </div>
             </div>
 
-            {/* Quick Color Presets */}
-            <div>
-              <label className="block font-bold text-slate-700 mb-2">Paletas de Cores Prontas para a Loja</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {COLOR_PRESETS.map(p => (
-                  <button
-                    key={p.name}
-                    type="button"
-                    onClick={() => setSettingsForm({
-                      ...settingsForm,
-                      theme_color_primary: p.primary,
-                      theme_color_secondary: p.secondary
-                    })}
-                    className="p-2.5 rounded-xl border border-slate-200 hover:border-slate-400 text-left flex items-center gap-2 transition cursor-pointer bg-slate-50"
-                  >
-                    <div className="flex -space-x-1">
-                      <span style={{ backgroundColor: p.primary }} className="w-4 h-4 rounded-full border border-white shadow-xs" />
-                      <span style={{ backgroundColor: p.secondary }} className="w-4 h-4 rounded-full border border-white shadow-xs" />
-                    </div>
-                    <span className="text-[11px] font-bold text-slate-800 truncate">{p.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom Color Pickers */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Cor Primária da Loja (Botões, Destaques)</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={settingsForm.theme_color_primary}
-                    onChange={e => setSettingsForm({ ...settingsForm, theme_color_primary: e.target.value })}
-                    className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5"
-                  />
-                  <input
-                    type="text"
-                    value={settingsForm.theme_color_primary}
-                    onChange={e => setSettingsForm({ ...settingsForm, theme_color_primary: e.target.value })}
-                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Cor Secundária da Loja (Fundo do Cabeçalho)</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={settingsForm.theme_color_secondary}
-                    onChange={e => setSettingsForm({ ...settingsForm, theme_color_secondary: e.target.value })}
-                    className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5"
-                  />
-                  <input
-                    type="text"
-                    value={settingsForm.theme_color_secondary}
-                    onChange={e => setSettingsForm({ ...settingsForm, theme_color_secondary: e.target.value })}
-                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Custom Announcement Banner */}
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Aviso Promocional no Topo da Sua Loja (Opcional)
+                Texto do Aviso (Opcional)
               </label>
               <input
                 type="text"
@@ -1556,51 +1467,12 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ onNavigate
               />
             </div>
 
-            {/* Live Store Banner Preview */}
-            <div className="pt-2">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-2">
-                Pré-visualização do Topo da Sua Loja com Suas Cores:
-              </span>
-              <div
-                style={{ backgroundColor: settingsForm.theme_color_secondary }}
-                className="p-4 rounded-2xl text-white shadow-md space-y-3 transition-colors"
-              >
-                {settingsForm.custom_announcement && (
-                  <div
-                    style={{ backgroundColor: settingsForm.theme_color_secondary, color: settingsForm.theme_color_primary }}
-                    className="text-[11px] font-bold py-1 px-2 text-center rounded-lg border border-white/10"
-                  >
-                    📢 {settingsForm.custom_announcement}
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  {settingsForm.logo_url ? (
-                    <img
-                      src={settingsForm.logo_url}
-                      alt={settingsForm.name}
-                      className="w-12 h-12 rounded-xl object-cover border border-white/30 shrink-0"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-white/20 border-2 border-white/30 flex items-center justify-center font-black text-lg">
-                      {settingsForm.name ? settingsForm.name[0] : 'L'}
-                    </div>
-                  )}
-                  <div>
-                    <h4 className="font-extrabold text-sm">{settingsForm.name || 'Nome da Sua Loja'}</h4>
-                    <span className="text-[10px] text-slate-300">Canaã dos Carajás, PA</span>
-                  </div>
-                  <div className="ml-auto">
-                    <button
-                      type="button"
-                      style={{ backgroundColor: settingsForm.theme_color_primary, color: '#0f172a' }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-black shadow-xs"
-                    >
-                      Botão na Loja
-                    </button>
-                  </div>
-                </div>
+            {settingsForm.custom_announcement && (
+              <div className="py-2.5 px-4 text-center text-xs font-bold bg-[#0047F7] text-white rounded-xl shadow-xs flex items-center justify-center gap-2">
+                <Megaphone className="w-4 h-4 shrink-0" />
+                <span>{settingsForm.custom_announcement}</span>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Section: General Store Information */}

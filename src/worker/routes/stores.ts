@@ -88,10 +88,7 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
     if (!user) {
       return { status: 401, data: { error: 'Autenticação necessária.' } };
     }
-    let store = await db.prepare('SELECT * FROM stores WHERE user_id = ?').bind(user.id).first();
-    if (!store && (user.role === 'superadmin' || user.role === 'admin')) {
-      store = await db.prepare('SELECT * FROM stores ORDER BY created_at ASC LIMIT 1').first();
-    }
+    const store = await db.prepare('SELECT * FROM stores WHERE user_id = ?').bind(user.id).first();
     return { status: 200, data: { store: store || null } };
   }
 
@@ -138,17 +135,14 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
   if (method === 'PUT' && path === '/api/merchant/store') {
     if (!user) return { status: 401, data: { error: 'Autenticação necessária.' } };
 
-    let store = await db.prepare('SELECT * FROM stores WHERE user_id = ?').bind(user.id).first<any>();
-    if (!store && (user.role === 'superadmin' || user.role === 'admin')) {
-      store = await db.prepare('SELECT * FROM stores ORDER BY created_at ASC LIMIT 1').first<any>();
-    }
+    const store = await db.prepare('SELECT * FROM stores WHERE user_id = ?').bind(user.id).first<any>();
     if (!store) return { status: 404, data: { error: 'Loja não encontrada.' } };
 
     const {
       name, category, description, phone, whatsapp, street, number, neighborhood,
       is_open, accepts_pickup, accepts_delivery, delivery_fee_base,
       delivery_time_min, free_delivery_minimum, logo_url, banner_url,
-      slug, theme_color_primary, theme_color_secondary, custom_announcement, instagram,
+      slug, custom_announcement, instagram,
       opening_hours_json, neighborhood_fees_json
     } = body || {};
 
@@ -181,8 +175,6 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
         free_delivery_minimum = COALESCE(?, free_delivery_minimum),
         logo_url = COALESCE(?, logo_url),
         banner_url = COALESCE(?, banner_url),
-        theme_color_primary = COALESCE(?, theme_color_primary),
-        theme_color_secondary = COALESCE(?, theme_color_secondary),
         custom_announcement = COALESCE(?, custom_announcement),
         opening_hours_json = COALESCE(?, opening_hours_json),
         neighborhood_fees_json = COALESCE(?, neighborhood_fees_json),
@@ -197,7 +189,7 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
       delivery_time_min,
       free_delivery_minimum !== undefined ? Number(free_delivery_minimum) : null,
       logo_url, banner_url,
-      theme_color_primary || null, theme_color_secondary || null, custom_announcement || null,
+      custom_announcement !== undefined ? (custom_announcement || null) : null,
       opening_hours_json !== undefined ? (typeof opening_hours_json === 'string' ? opening_hours_json : JSON.stringify(opening_hours_json)) : null,
       neighborhood_fees_json !== undefined ? (typeof neighborhood_fees_json === 'string' ? neighborhood_fees_json : JSON.stringify(neighborhood_fees_json)) : null,
       store.id
@@ -210,10 +202,7 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
   // GET /api/merchant/products
   if (method === 'GET' && path === '/api/merchant/products') {
     if (!user) return { status: 401, data: { error: 'Autenticação necessária.' } };
-    let store = await db.prepare('SELECT id FROM stores WHERE user_id = ?').bind(user.id).first<any>();
-    if (!store && (user.role === 'superadmin' || user.role === 'admin')) {
-      store = await db.prepare('SELECT id FROM stores ORDER BY created_at ASC LIMIT 1').first<any>();
-    }
+    const store = await db.prepare('SELECT id FROM stores WHERE user_id = ?').bind(user.id).first<any>();
     if (!store) return { status: 200, data: { products: [] } };
 
     const { results } = await db.prepare(`
@@ -230,10 +219,7 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
   // POST /api/merchant/products
   if (method === 'POST' && path === '/api/merchant/products') {
     if (!user) return { status: 401, data: { error: 'Autenticação necessária.' } };
-    let store = await db.prepare('SELECT * FROM stores WHERE user_id = ?').bind(user.id).first<any>();
-    if (!store && (user.role === 'superadmin' || user.role === 'admin')) {
-      store = await db.prepare('SELECT * FROM stores ORDER BY created_at ASC LIMIT 1').first<any>();
-    }
+    const store = await db.prepare('SELECT * FROM stores WHERE user_id = ?').bind(user.id).first<any>();
     if (!store) return { status: 400, data: { error: 'Você ainda não possui uma loja cadastrada.' } };
 
     const { name, category_id, description, price, promotional_price, stock_quantity, image_url, sku, weight_kg } = body || {};
@@ -265,10 +251,7 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
   const prodMatch = path.match(/^\/api\/merchant\/products\/([a-zA-Z0-9_-]+)$/);
   if (method === 'PUT' && prodMatch) {
     if (!user) return { status: 401, data: { error: 'Autenticação necessária.' } };
-    let store = await db.prepare('SELECT id FROM stores WHERE user_id = ?').bind(user.id).first<any>();
-    if (!store && (user.role === 'superadmin' || user.role === 'admin')) {
-      store = await db.prepare('SELECT id FROM stores ORDER BY created_at ASC LIMIT 1').first<any>();
-    }
+    const store = await db.prepare('SELECT id FROM stores WHERE user_id = ?').bind(user.id).first<any>();
     if (!store) return { status: 403, data: { error: 'Acesso negado.' } };
 
     const prodId = prodMatch[1];
@@ -304,10 +287,7 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
   // DELETE /api/merchant/products/:id
   if (method === 'DELETE' && prodMatch) {
     if (!user) return { status: 401, data: { error: 'Autenticação necessária.' } };
-    let store = await db.prepare('SELECT id FROM stores WHERE user_id = ?').bind(user.id).first<any>();
-    if (!store && (user.role === 'superadmin' || user.role === 'admin')) {
-      store = await db.prepare('SELECT id FROM stores ORDER BY created_at ASC LIMIT 1').first<any>();
-    }
+    const store = await db.prepare('SELECT id FROM stores WHERE user_id = ?').bind(user.id).first<any>();
     if (!store) return { status: 403, data: { error: 'Acesso negado.' } };
 
     const prodId = prodMatch[1];
@@ -318,10 +298,7 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
   // GET /api/merchant/orders
   if (method === 'GET' && path === '/api/merchant/orders') {
     if (!user) return { status: 401, data: { error: 'Autenticação necessária.' } };
-    let store = await db.prepare('SELECT id FROM stores WHERE user_id = ?').bind(user.id).first<any>();
-    if (!store && (user.role === 'superadmin' || user.role === 'admin')) {
-      store = await db.prepare('SELECT id FROM stores ORDER BY created_at ASC LIMIT 1').first<any>();
-    }
+    const store = await db.prepare('SELECT id FROM stores WHERE user_id = ?').bind(user.id).first<any>();
     if (!store) return { status: 200, data: { orders: [] } };
 
     const { results } = await db.prepare(`
@@ -346,10 +323,7 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
   const orderStatusMatch = path.match(/^\/api\/merchant\/orders\/([a-zA-Z0-9_-]+)\/status$/);
   if (method === 'PATCH' && orderStatusMatch) {
     if (!user) return { status: 401, data: { error: 'Autenticação necessária.' } };
-    let store = await db.prepare('SELECT id FROM stores WHERE user_id = ?').bind(user.id).first<any>();
-    if (!store && (user.role === 'superadmin' || user.role === 'admin')) {
-      store = await db.prepare('SELECT id FROM stores ORDER BY created_at ASC LIMIT 1').first<any>();
-    }
+    const store = await db.prepare('SELECT id FROM stores WHERE user_id = ?').bind(user.id).first<any>();
     if (!store) return { status: 403, data: { error: 'Acesso negado.' } };
 
     const subOrderId = orderStatusMatch[1];
@@ -377,10 +351,7 @@ export async function handleStoresRoutes(req: { method: string; path: string; qu
   // GET /api/merchant/analytics
   if (method === 'GET' && path === '/api/merchant/analytics') {
     if (!user) return { status: 401, data: { error: 'Autenticação necessária.' } };
-    let store = await db.prepare('SELECT id FROM stores WHERE user_id = ?').bind(user.id).first<any>();
-    if (!store && (user.role === 'superadmin' || user.role === 'admin')) {
-      store = await db.prepare('SELECT id FROM stores ORDER BY created_at ASC LIMIT 1').first<any>();
-    }
+    const store = await db.prepare('SELECT id FROM stores WHERE user_id = ?').bind(user.id).first<any>();
     if (!store) {
       return {
         status: 200,
