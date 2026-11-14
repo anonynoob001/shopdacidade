@@ -61,15 +61,19 @@ export const Header: React.FC<HeaderProps> = ({
       className="relative z-40 border-b border-slate-800 text-white shadow-md transition-colors"
     >
       {/* Top Banner Notice (configured in Super Admin Panel) */}
-      {settings.banner_notice && (
-        <div 
-          style={{ backgroundColor: settings.primary_color || '#0047F7' }}
-          className="text-white font-bold px-4 py-1.5 text-center text-xs flex items-center justify-center gap-2 shadow-xs transition-colors"
-        >
-          <Megaphone className="w-3.5 h-3.5 shrink-0 text-[#FA4802]" />
-          <span className="truncate">{settings.banner_notice}</span>
-        </div>
-      )}
+      {settings.banner_notice && (() => {
+        const bg = settings.primary_color || '#0047F7';
+        const isBrightBg = /^#(a2fa07|fdca04|dffa7d)/i.test(bg.trim());
+        return (
+          <div 
+            style={{ backgroundColor: bg }}
+            className={`${isBrightBg ? 'text-slate-950' : 'text-white'} font-bold px-4 py-1.5 text-center text-xs flex items-center justify-center gap-2 shadow-xs transition-colors`}
+          >
+            <Megaphone className={`w-3.5 h-3.5 shrink-0 ${isBrightBg ? 'text-slate-950' : 'text-[#FA4802]'}`} />
+            <span className="truncate">{settings.banner_notice}</span>
+          </div>
+        );
+      })()}
 
       {/* Top micro bar with location and quick switcher */}
       <div className="bg-[#050e24] px-4 py-1.5 text-xs text-slate-300 border-b border-blue-950/60">

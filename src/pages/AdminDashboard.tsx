@@ -56,12 +56,25 @@ interface AdminDashboardProps {
   onNavigate: (view: string, param?: string) => void;
 }
 
-const THEME_PRESETS = [
+const THEME_PRESETS: Array<{
+  name: string;
+  primary: string;
+  secondary: string;
+  accent: string;
+  swatches?: string[];
+}> = [
   {
     name: 'Shop da Cidade Tech (Azul Cobalto & Laranja)',
     primary: '#0047F7',
     secondary: '#071536',
     accent: '#FA4802'
+  },
+  {
+    name: 'Verde Neon & Oliva (Sport High-Contrast)',
+    primary: '#A2FA07',
+    secondary: '#0A0A09',
+    accent: '#4F6629',
+    swatches: ['#A2FA07', '#4F6629', '#DFFA7D', '#0A0A09', '#FFFFFF']
   },
   {
     name: 'Shop da Cidade Clássico (Ouro & Grafite)',
@@ -1087,9 +1100,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                     className="p-3 rounded-2xl border border-slate-200 hover:border-slate-400 text-left flex items-center gap-3 transition cursor-pointer bg-slate-50 hover:bg-white"
                   >
                     <div className="flex -space-x-1.5 shrink-0">
-                      <span style={{ backgroundColor: t.primary }} className="w-5 h-5 rounded-full border-2 border-white shadow-xs" />
-                      <span style={{ backgroundColor: t.secondary }} className="w-5 h-5 rounded-full border-2 border-white shadow-xs" />
-                      <span style={{ backgroundColor: t.accent }} className="w-5 h-5 rounded-full border-2 border-white shadow-xs" />
+                      {(t.swatches || [t.primary, t.secondary, t.accent]).map((hex, idx) => (
+                        <span
+                          key={`${t.name}-${idx}`}
+                          style={{ backgroundColor: hex }}
+                          className="w-5 h-5 rounded-full border-2 border-slate-200 shadow-xs"
+                        />
+                      ))}
                     </div>
                     <span className="text-xs font-bold text-slate-900 truncate">{t.name}</span>
                   </button>
