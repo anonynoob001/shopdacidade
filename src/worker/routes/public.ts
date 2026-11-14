@@ -45,6 +45,7 @@ export async function handlePublicRoutes(req: { method: string; path: string; qu
       const PUBLIC_ALLOWED_SETTINGS = new Set([
         'platform_name',
         'site_tagline',
+        'site_logo_url',
         'city_name',
         'city_state',
         'primary_color',
@@ -223,11 +224,12 @@ export async function handlePublicRoutes(req: { method: string; path: string; qu
     const defaultSettings: Record<string, string> = {
       platform_name: 'Shop da Cidade',
       site_tagline: 'O Shopping Virtual da Sua Cidade',
+      site_logo_url: '/shop-da-cidade-logo-transparente.png',
       city_name: 'Canaã dos Carajás',
       city_state: 'PA',
-      primary_color: '#fdca04',
-      secondary_color: '#0f172a',
-      accent_color: '#f59e0b',
+      primary_color: '#0047F7',
+      secondary_color: '#071536',
+      accent_color: '#FA4802',
       official_whatsapp: '(94) 99123-4567',
       official_email: 'atendimento@shopdacidade.com.br',
       banner_notice: 'Bem-vindo ao Shop da Cidade em Canaã dos Carajás!',
@@ -241,6 +243,7 @@ export async function handlePublicRoutes(req: { method: string; path: string; qu
       const PUBLIC_ALLOWED = new Set([
         'platform_name',
         'site_tagline',
+        'site_logo_url',
         'city_name',
         'city_state',
         'primary_color',

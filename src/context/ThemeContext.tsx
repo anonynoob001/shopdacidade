@@ -5,6 +5,7 @@ import { apiRequest } from '../services/api';
 export interface SiteSettings {
   platform_name: string;
   site_tagline: string;
+  site_logo_url?: string;
   city_name: string;
   city_state: string;
   primary_color: string;
@@ -29,6 +30,7 @@ export interface SiteSettings {
 const DEFAULT_SETTINGS: SiteSettings = {
   platform_name: 'Shop da Cidade',
   site_tagline: 'O Shopping Virtual da Sua Cidade',
+  site_logo_url: '/shop-da-cidade-logo-transparente.png',
   city_name: 'Canaã dos Carajás',
   city_state: 'PA',
   primary_color: '#0047F7', // Vibrant Electric Cobalt Blue

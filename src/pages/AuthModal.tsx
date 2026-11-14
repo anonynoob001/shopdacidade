@@ -2,10 +2,12 @@
 import { CheckCircle2, Eye, EyeOff, KeyRound, Lock, Mail, Phone, ShieldCheck, ShoppingBag, Store, Truck, User as UserIcon, Wrench, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useSiteTheme } from '../context/ThemeContext';
 import { UserRole } from '../worker/types';
 
 export const AuthModal: React.FC = () => {
   const { isAuthModalOpen, authModalMode, closeAuthModal, login, login2FA, register } = useAuth();
+  const { settings } = useSiteTheme();
   const [mode, setMode] = useState<'login' | 'register'>(authModalMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -89,8 +91,8 @@ export const AuthModal: React.FC = () => {
         {/* Brand header */}
         <div className="flex items-center gap-3 mb-6">
           <img
-            src="/shop-da-cidade-logo-transparente.png"
-            alt="Shop da Cidade"
+            src={settings.site_logo_url || '/shop-da-cidade-logo-transparente.png'}
+            alt={settings.platform_name || 'Shop da Cidade'}
             className="h-11 w-auto max-w-[170px] object-contain"
           />
           <div>

@@ -20,8 +20,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
               <img
-                src="/shop-da-cidade-logo-transparente.png"
-                alt={settings.platform_name || "Shop da Cidade"}
+                src={settings.site_logo_url || '/shop-da-cidade-logo-transparente.png'}
+                alt={settings.platform_name || 'Shop da Cidade'}
                 className="h-12 w-auto max-w-[210px] object-contain drop-shadow"
               />
             </div>

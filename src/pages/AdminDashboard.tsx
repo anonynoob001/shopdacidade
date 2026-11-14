@@ -17,6 +17,7 @@ import {
   FileCode,
   FileSpreadsheet,
   Globe,
+  Image as ImageIcon,
   KeyRound,
   Layers,
   Lock,
@@ -40,11 +41,12 @@ import {
   Trash2,
   TrendingUp,
   Truck,
+  Upload,
   Users,
   Wrench,
   X
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSiteTheme } from '../context/ThemeContext';
 import { apiRequest, formatBRL, formatDateBR, STORE_CATEGORIES } from '../services/api';
@@ -56,7 +58,13 @@ interface AdminDashboardProps {
 
 const THEME_PRESETS = [
   {
-    name: 'Shop da Cidade Oficial (Ouro & Grafite)',
+    name: 'Shop da Cidade Tech (Azul Cobalto & Laranja)',
+    primary: '#0047F7',
+    secondary: '#071536',
+    accent: '#FA4802'
+  },
+  {
+    name: 'Shop da Cidade Clássico (Ouro & Grafite)',
     primary: '#fdca04',
     secondary: '#0f172a',
     accent: '#f59e0b'
@@ -89,7 +97,9 @@ const THEME_PRESETS = [
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
   const { user, login, login2FA, logout } = useAuth();
-  const { updateSettingsState, refreshSettings: refreshGlobalTheme } = useSiteTheme();
+  const { settings: globalSiteSettings, updateSettingsState, refreshSettings: refreshGlobalTheme } = useSiteTheme();
+  const siteLogoInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploadingSiteLogo, setIsUploadingSiteLogo] = useState(false);
 
   // Admin Security & 2FA Gate State
   const [adminEmail, setAdminEmail] = useState('');
@@ -588,8 +598,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           {/* Logo & Security Badge */}
           <div className="text-center space-y-3">
             <img
-              src="/shop-da-cidade-logo-transparente.png"
-              alt="Shop da Cidade"
+              src={globalSiteSettings.site_logo_url || '/shop-da-cidade-logo-transparente.png'}
+              alt={globalSiteSettings.platform_name || 'Shop da Cidade'}
               className="h-12 w-auto max-w-[210px] mx-auto object-contain drop-shadow"
             />
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-black uppercase tracking-wider">
@@ -909,6 +919,139 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             </div>
           )}
 
+          {/* Site Logo Panel (Seasonal Campaigns & Visual Updates) */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-[#0047F7]" />
+                <div>
+                  <h3 className="text-base font-black text-slate-900 tracking-tight">Logotipo Oficial do Site</h3>
+                  <p className="text-xs text-slate-500">
+                    Altere a logo exibida no cabeçalho, rodapé e telas de login para datas comemorativas (Natal, Black Friday, Aniversário da Cidade) ou atualizações de marca.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const defaultLogo = '/shop-da-cidade-logo-transparente.png';
+                  setSettings(prev => ({ ...prev, site_logo_url: defaultLogo }));
+                  updateSettingsState({ site_logo_url: defaultLogo });
+                }}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] inline-flex items-center gap-1.5 transition cursor-pointer shrink-0 self-start sm:self-center"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Restaurar Padrão
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+              {/* Current Logo Preview Box */}
+              <div
+                style={{ backgroundColor: settings['secondary_color'] || '#071536' }}
+                className="sm:col-span-4 p-4 rounded-2xl border border-slate-200 flex flex-col items-center justify-center min-h-[104px] gap-2"
+              >
+                <img
+                  src={settings['site_logo_url'] || '/shop-da-cidade-logo-transparente.png'}
+                  alt="Preview da Logo do Site"
+                  className="max-h-14 w-auto max-w-full object-contain drop-shadow"
+                />
+                <span className="text-[10px] text-slate-300 font-medium">Prévia em fundo escuro</span>
+              </div>
+
+              {/* Upload & URL Controls */}
+              <div className="sm:col-span-8 space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    ref={siteLogoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setIsUploadingSiteLogo(true);
+                      try {
+                        const dataUrl = await new Promise<string>((resolve, reject) => {
+                          const reader = new FileReader();
+                          reader.onerror = reject;
+                          reader.onload = ev => {
+                            const raw = ev.target?.result as string;
+                            if (file.type === 'image/svg+xml') {
+                              resolve(raw);
+                              return;
+                            }
+                            const img = new window.Image();
+                            img.onerror = reject;
+                            img.onload = () => {
+                              const maxW = 640;
+                              const maxH = 240;
+                              let w = img.width;
+                              let h = img.height;
+                              if (w > maxW || h > maxH) {
+                                const ratio = Math.min(maxW / w, maxH / h);
+                                w = Math.round(w * ratio);
+                                h = Math.round(h * ratio);
+                              }
+                              const canvas = document.createElement('canvas');
+                              canvas.width = w;
+                              canvas.height = h;
+                              const ctx = canvas.getContext('2d');
+                              if (!ctx) {
+                                resolve(raw);
+                                return;
+                              }
+                              ctx.drawImage(img, 0, 0, w, h);
+                              // Preserve transparent background for PNG/WebP logos
+                              const mime = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+                              resolve(canvas.toDataURL(mime, 0.92));
+                            };
+                            img.src = raw;
+                          };
+                          reader.readAsDataURL(file);
+                        });
+                        setSettings(prev => ({ ...prev, site_logo_url: dataUrl }));
+                        updateSettingsState({ site_logo_url: dataUrl });
+                      } catch {
+                        alert('Não foi possível processar a imagem selecionada.');
+                      } finally {
+                        setIsUploadingSiteLogo(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={isUploadingSiteLogo}
+                    onClick={() => siteLogoInputRef.current?.click()}
+                    className="px-4 py-2 rounded-xl bg-[#0047F7] hover:bg-[#0038c7] text-white font-bold text-xs inline-flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-60"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    {isUploadingSiteLogo ? 'Processando...' : 'Enviar Nova Logo (PNG/SVG/JPG)'}
+                  </button>
+                  <span className="text-[11px] text-slate-400">
+                    Recomendado: PNG com fundo transparente (ex: 400x120px).
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Ou informe a URL / Caminho da Logo</label>
+                  <input
+                    type="text"
+                    value={settings['site_logo_url'] || ''}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSettings(prev => ({ ...prev, site_logo_url: val }));
+                      updateSettingsState({ site_logo_url: val || '/shop-da-cidade-logo-transparente.png' });
+                    }}
+                    placeholder="/shop-da-cidade-logo-transparente.png ou https://..."
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Site Colors & Palette Panel */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5">
             <div className="flex items-center gap-2">
@@ -1046,7 +1189,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <img src="/shop-da-cidade-logo-transparente.png" alt="" className="h-7 w-auto object-contain" />
+                    <img
+                      src={settings['site_logo_url'] || '/shop-da-cidade-logo-transparente.png'}
+                      alt={settings['platform_name'] || 'Shop da Cidade'}
+                      className="h-7 w-auto max-w-[140px] object-contain"
+                    />
                     <span className="text-xs font-black">{settings['platform_name'] || 'Shop da Cidade'}</span>
                   </div>
                   <span

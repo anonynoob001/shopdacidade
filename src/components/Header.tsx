@@ -114,8 +114,8 @@ export const Header: React.FC<HeaderProps> = ({
             title="Ir para a página inicial do Shop da Cidade"
           >
             <img
-              src="/shop-da-cidade-logo-transparente.png"
-              alt="Shop da Cidade"
+              src={settings.site_logo_url || '/shop-da-cidade-logo-transparente.png'}
+              alt={settings.platform_name || 'Shop da Cidade'}
               className="h-10 sm:h-12 w-auto max-w-[180px] sm:max-w-[220px] object-contain transition-transform group-hover:scale-105"
             />
           </button>
