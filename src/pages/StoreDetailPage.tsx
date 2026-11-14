@@ -154,27 +154,40 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-400 gap-3">
-        <div className="w-10 h-10 border-4 border-[#0047F7] border-t-transparent rounded-full animate-spin" />
-        <span className="text-sm font-semibold text-slate-600">Abrindo a loja...</span>
+      <div className="min-h-screen bg-[var(--theme-page-bg)] flex flex-col items-center justify-center text-[var(--theme-text-secondary)] gap-3">
+        <div
+          style={{ borderColor: 'var(--theme-primary)', borderTopColor: 'transparent' }}
+          className="w-10 h-10 border-4 rounded-full animate-spin"
+        />
+        <span className="text-sm font-semibold text-[var(--theme-text-primary)]">Abrindo a loja...</span>
       </div>
     );
   }
 
   if (error || !store) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200 p-8 text-center">
+      <div className="min-h-screen bg-[var(--theme-page-bg)] flex items-center justify-center p-4">
+        <div
+          style={{
+            backgroundColor: 'var(--theme-card-bg)',
+            borderColor: 'var(--theme-card-border)'
+          }}
+          className="max-w-md w-full rounded-2xl shadow-xl border p-8 text-center"
+        >
           <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-4">
             <StoreIcon className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-black text-slate-800">Loja não encontrada</h2>
-          <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+          <h2 className="text-xl font-black text-[var(--theme-text-primary)]">Loja não encontrada</h2>
+          <p className="text-xs text-[var(--theme-text-secondary)] mt-2 leading-relaxed">
             {error || 'O estabelecimento solicitado não está ativo ou o link expirou.'}
           </p>
           <button
             onClick={() => onNavigate('stores')}
-            className="mt-6 w-full py-3 rounded-xl bg-[#071536] text-white text-xs font-bold shadow-md cursor-pointer hover:bg-[#0c2154] transition"
+            style={{
+              backgroundColor: 'var(--theme-primary)',
+              color: 'var(--theme-primary-text)'
+            }}
+            className="mt-6 w-full py-3 rounded-xl text-xs font-bold shadow-md cursor-pointer hover:brightness-110 transition"
           >
             Ver outras lojas de Canaã dos Carajás
           </button>
@@ -187,16 +200,28 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
   const isOpen = storeStatus.isOpen;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900 font-sans selection:bg-[#0047F7] selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[var(--theme-page-bg)] text-[var(--theme-text-primary)] font-sans selection:bg-[var(--theme-primary)] selection:text-[var(--theme-primary-text)] transition-colors">
       {/* 1. COMPACT INTEGRATED COVER HERO (SHOPEE-INSPIRED + LOCAL DELIVERY DETAILS) */}
-      <section className="relative bg-[#071536] text-white overflow-hidden">
+      <section
+        style={{
+          backgroundColor: 'var(--theme-hero-bg)',
+          color: 'var(--theme-hero-text)'
+        }}
+        className="relative overflow-hidden"
+      >
         {/* Background Cover Image with Dark Readability Scrim */}
         <img
           src={store.banner_url || 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&h=450&fit=crop&q=80'}
           alt={`Capa ${store.name}`}
           className="absolute inset-0 w-full h-full object-cover opacity-55"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#071536]/80 via-[#071536]/55 to-[#071536]/95" />
+        <div
+          style={{
+            background:
+              'linear-gradient(to bottom, color-mix(in srgb, var(--theme-hero-bg) 82%, transparent), color-mix(in srgb, var(--theme-hero-bg) 55%, transparent), var(--theme-hero-bg))'
+          }}
+          className="absolute inset-0"
+        />
 
         <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 pt-3 pb-4 space-y-4">
           {/* Top Integrated Search & Action Bar */}
@@ -245,11 +270,21 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
             <button
               type="button"
               onClick={() => onNavigate('cart')}
-              className="relative px-3 py-2 rounded-xl bg-[#FA4802] hover:bg-[#e04000] text-white font-black text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition cursor-pointer shrink-0"
+              style={{
+                backgroundColor: 'var(--theme-accent)',
+                color: 'var(--theme-accent-text)'
+              }}
+              className="relative px-3 py-2 rounded-xl hover:brightness-110 font-black text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition cursor-pointer shrink-0"
             >
               <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
               <span className="hidden sm:inline">Sacola</span>
-              <span className="px-1.5 py-0.5 rounded-full bg-[#071536] text-white text-[10px] font-black leading-none">
+              <span
+                style={{
+                  backgroundColor: 'var(--theme-hero-bg)',
+                  color: 'var(--theme-hero-text)'
+                }}
+                className="px-1.5 py-0.5 rounded-full text-[10px] font-black leading-none"
+              >
                 {totalItemCount}
               </span>
             </button>
@@ -265,13 +300,19 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
                   alt={store.name}
                   className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-white shadow-xl bg-white"
                 />
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded bg-[#FA4802] text-white text-[9px] font-black uppercase tracking-wider shadow-sm">
+                <span
+                  style={{
+                    backgroundColor: 'var(--theme-accent)',
+                    color: 'var(--theme-accent-text)'
+                  }}
+                  className="absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shadow-sm"
+                >
                   Loja Oficial
                 </span>
               </div>
 
               <div className="min-w-0 space-y-1">
-                <h1 className="text-base sm:text-2xl font-black text-white truncate tracking-tight">
+                <h1 style={{ color: 'var(--theme-hero-text)' }} className="text-base sm:text-2xl font-black truncate tracking-tight">
                   {store.name}
                 </h1>
 
@@ -296,7 +337,7 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
                   </span>
                   <span className="hidden md:inline text-white/30">|</span>
                   <span className="hidden md:inline-flex items-center gap-1 text-slate-200">
-                    <MapPin className="w-3 h-3 text-[#FA4802]" />
+                    <MapPin style={{ color: 'var(--theme-accent)' }} className="w-3 h-3" />
                     Bairro {store.neighborhood}
                   </span>
                 </div>
@@ -310,7 +351,11 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
                   href={`https://wa.me/55${store.whatsapp.replace(/\D/g, '')}?text=Olá,%20vi%20sua%20loja%20no%20Shop%20da%20Cidade%20e%20gostaria%20de%20atendimento.`}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-3 py-1.5 rounded-lg bg-[#FA4802] hover:bg-[#e04000] text-white font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow transition active:scale-95"
+                  style={{
+                    backgroundColor: 'var(--theme-accent)',
+                    color: 'var(--theme-accent-text)'
+                  }}
+                  className="px-3 py-1.5 rounded-lg hover:brightness-110 font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow transition active:scale-95"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
                   <span>WhatsApp</span>
@@ -331,25 +376,34 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
 
       {/* Optional Announcement Strip */}
       {store.custom_announcement && (
-        <div className="bg-[#0047F7] text-white py-2 px-4 text-center text-xs font-bold flex items-center justify-center gap-2 shadow-xs">
+        <div
+          style={{
+            backgroundColor: 'var(--theme-primary)',
+            color: 'var(--theme-primary-text)'
+          }}
+          className="py-2 px-4 text-center text-xs font-bold flex items-center justify-center gap-2 shadow-xs"
+        >
           <Megaphone className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">{store.custom_announcement}</span>
         </div>
       )}
 
       {/* Compact Local Delivery & Free Shipping Strip */}
-      <div className="bg-[#071536]/95 border-t border-white/10 text-slate-200 px-3 sm:px-6 py-2 text-[11px] sm:text-xs">
+      <div
+        style={{ backgroundColor: 'var(--theme-topbar-bg)' }}
+        className="border-t border-white/10 text-slate-200 px-3 sm:px-6 py-2 text-[11px] sm:text-xs"
+      >
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1.5 font-semibold">
-              <Truck className="w-3.5 h-3.5 text-[#FA4802]" />
+              <Truck style={{ color: 'var(--theme-accent)' }} className="w-3.5 h-3.5" />
               Entrega:{' '}
               <strong className="text-white">
                 {store.delivery_fee_base > 0 ? formatBRL(store.delivery_fee_base) : 'Grátis'}
               </strong>
             </span>
             {store.free_delivery_minimum && store.free_delivery_minimum > 0 && (
-              <span className="inline-flex items-center gap-1 text-emerald-300 font-semibold">
+              <span style={{ color: 'var(--theme-badge-open)' }} className="inline-flex items-center gap-1 font-semibold">
                 • Frete grátis acima de {formatBRL(store.free_delivery_minimum)}
               </span>
             )}
@@ -360,8 +414,14 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
         </div>
       </div>
 
-      {/* 2. SHOPEE-STYLE CLEAN WHITE NAVIGATION TABS */}
-      <div className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-2xs">
+      {/* 2. SHOPEE-STYLE CLEAN NAVIGATION TABS */}
+      <div
+        style={{
+          backgroundColor: 'var(--theme-card-bg)',
+          borderColor: 'var(--theme-card-border)'
+        }}
+        className="sticky top-0 z-30 border-b shadow-2xs transition-colors"
+      >
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-3 text-center text-xs sm:text-sm font-bold">
             <button
@@ -370,36 +430,45 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
                 setActiveTab('shop');
                 setSelectedCategory('all');
               }}
-              className={`py-3 border-b-2 transition cursor-pointer ${
+              style={
                 activeTab === 'shop'
-                  ? 'border-[#FA4802] text-[#FA4802]'
-                  : 'border-transparent text-slate-600 hover:text-slate-900'
-              }`}
+                  ? { borderColor: 'var(--theme-accent)', color: 'var(--theme-accent)' }
+                  : { borderColor: 'transparent', color: 'var(--theme-text-secondary)' }
+              }
+              className="py-3 border-b-2 transition cursor-pointer hover:opacity-90"
             >
               Destaques
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('products')}
-              className={`py-3 border-b-2 transition cursor-pointer flex items-center justify-center gap-1.5 ${
+              style={
                 activeTab === 'products'
-                  ? 'border-[#FA4802] text-[#FA4802]'
-                  : 'border-transparent text-slate-600 hover:text-slate-900'
-              }`}
+                  ? { borderColor: 'var(--theme-accent)', color: 'var(--theme-accent)' }
+                  : { borderColor: 'transparent', color: 'var(--theme-text-secondary)' }
+              }
+              className="py-3 border-b-2 transition cursor-pointer flex items-center justify-center gap-1.5 hover:opacity-90"
             >
               <span>Produtos</span>
-              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold">
+              <span
+                style={{
+                  backgroundColor: 'var(--theme-page-bg)',
+                  color: 'var(--theme-text-secondary)'
+                }}
+                className="px-1.5 py-0.5 rounded text-[10px] font-bold"
+              >
                 {products.length}
               </span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('categories')}
-              className={`py-3 border-b-2 transition cursor-pointer ${
+              style={
                 activeTab === 'categories'
-                  ? 'border-[#FA4802] text-[#FA4802]'
-                  : 'border-transparent text-slate-600 hover:text-slate-900'
-              }`}
+                  ? { borderColor: 'var(--theme-accent)', color: 'var(--theme-accent)' }
+                  : { borderColor: 'transparent', color: 'var(--theme-text-secondary)' }
+              }
+              className="py-3 border-b-2 transition cursor-pointer hover:opacity-90"
             >
               Categorias
             </button>
@@ -407,42 +476,49 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
 
           {/* Sub-bar: Sort Strip (Visible on Produtos & Destaques) */}
           {activeTab !== 'categories' && (
-            <div className="border-t border-slate-100 px-3 sm:px-6 py-2 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none bg-white">
+            <div
+              style={{
+                borderColor: 'var(--theme-card-border)',
+                backgroundColor: 'var(--theme-card-bg)'
+              }}
+              className="border-t px-3 sm:px-6 py-2 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none"
+            >
               <div className="flex items-center divide-x divide-slate-200 text-xs whitespace-nowrap">
                 <button
                   type="button"
                   onClick={() => setSortMode('popular')}
-                  className={`pr-3 font-semibold cursor-pointer transition ${
-                    sortMode === 'popular' ? 'text-[#FA4802] font-bold' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  style={{ color: sortMode === 'popular' ? 'var(--theme-accent)' : 'var(--theme-text-secondary)' }}
+                  className={`pr-3 font-semibold cursor-pointer transition ${sortMode === 'popular' ? 'font-bold' : ''}`}
                 >
                   Popular
                 </button>
                 <button
                   type="button"
                   onClick={() => setSortMode('recent')}
-                  className={`px-3 font-semibold cursor-pointer transition ${
-                    sortMode === 'recent' ? 'text-[#FA4802] font-bold' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  style={{ color: sortMode === 'recent' ? 'var(--theme-accent)' : 'var(--theme-text-secondary)' }}
+                  className={`px-3 font-semibold cursor-pointer transition ${sortMode === 'recent' ? 'font-bold' : ''}`}
                 >
                   Mais Recente
                 </button>
                 <button
                   type="button"
                   onClick={() => setSortMode('promo')}
-                  className={`px-3 font-semibold cursor-pointer transition ${
-                    sortMode === 'promo' ? 'text-[#FA4802] font-bold' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  style={{ color: sortMode === 'promo' ? 'var(--theme-accent)' : 'var(--theme-text-secondary)' }}
+                  className={`px-3 font-semibold cursor-pointer transition ${sortMode === 'promo' ? 'font-bold' : ''}`}
                 >
                   Ofertas
                 </button>
                 <button
                   type="button"
                   onClick={handlePriceSortToggle}
+                  style={{
+                    color:
+                      sortMode === 'price_asc' || sortMode === 'price_desc'
+                        ? 'var(--theme-accent)'
+                        : 'var(--theme-text-secondary)'
+                  }}
                   className={`pl-3 font-semibold cursor-pointer inline-flex items-center gap-1 transition ${
-                    sortMode === 'price_asc' || sortMode === 'price_desc'
-                      ? 'text-[#FA4802] font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
+                    sortMode === 'price_asc' || sortMode === 'price_desc' ? 'font-bold' : ''
                   }`}
                 >
                   <span>
@@ -456,7 +532,12 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
                 <button
                   type="button"
                   onClick={() => setSelectedCategory('all')}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-[#0047F7] border border-blue-200 text-[11px] font-bold shrink-0 cursor-pointer"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--theme-primary) 12%, transparent)',
+                    color: 'var(--theme-primary)',
+                    borderColor: 'color-mix(in srgb, var(--theme-primary) 30%, transparent)'
+                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-bold shrink-0 cursor-pointer"
                 >
                   <span>{selectedCategory}</span>
                   <X className="w-3 h-3" />
@@ -475,11 +556,20 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
             <button
               type="button"
               onClick={() => setSelectedCategory('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+              style={
                 selectedCategory === 'all'
-                  ? 'bg-[#0047F7] text-white shadow-xs'
-                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-              }`}
+                  ? {
+                      backgroundColor: 'var(--theme-primary)',
+                      color: 'var(--theme-primary-text)',
+                      borderColor: 'var(--theme-primary)'
+                    }
+                  : {
+                      backgroundColor: 'var(--theme-card-bg)',
+                      color: 'var(--theme-text-primary)',
+                      borderColor: 'var(--theme-card-border)'
+                    }
+              }
+              className="px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap border shadow-xs"
             >
               Todos os itens
             </button>
@@ -488,11 +578,20 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
                 key={cat.name}
                 type="button"
                 onClick={() => setSelectedCategory(cat.name)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                style={
                   selectedCategory === cat.name
-                    ? 'bg-[#0047F7] text-white shadow-xs'
-                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                }`}
+                    ? {
+                        backgroundColor: 'var(--theme-primary)',
+                        color: 'var(--theme-primary-text)',
+                        borderColor: 'var(--theme-primary)'
+                      }
+                    : {
+                        backgroundColor: 'var(--theme-card-bg)',
+                        color: 'var(--theme-text-primary)',
+                        borderColor: 'var(--theme-card-border)'
+                      }
+                }
+                className="px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap border shadow-xs"
               >
                 {cat.name} ({cat.count})
               </button>
@@ -503,25 +602,37 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
         {/* CATEGORIES TAB VIEW */}
         {activeTab === 'categories' ? (
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-slate-200/80 divide-y divide-slate-100 overflow-hidden shadow-xs">
+            <div
+              style={{
+                backgroundColor: 'var(--theme-card-bg)',
+                borderColor: 'var(--theme-card-border)'
+              }}
+              className="rounded-2xl border divide-y divide-slate-100 overflow-hidden shadow-xs"
+            >
               <button
                 type="button"
                 onClick={() => {
                   setSelectedCategory('all');
                   setActiveTab('products');
                 }}
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer text-left"
+                className="w-full p-4 flex items-center justify-between hover:brightness-97 transition cursor-pointer text-left"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-[#0047F7]/10 text-[#0047F7] flex items-center justify-center shrink-0">
+                  <div
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--theme-primary) 12%, transparent)',
+                      color: 'var(--theme-primary)'
+                    }}
+                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                  >
                     <Tag className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="font-bold text-sm text-slate-900 block">Todos os Produtos da Loja</span>
-                    <span className="text-xs text-slate-500">{products.length} itens disponíveis</span>
+                    <span className="font-bold text-sm text-[var(--theme-text-primary)] block">Todos os Produtos da Loja</span>
+                    <span className="text-xs text-[var(--theme-text-secondary)]">{products.length} itens disponíveis</span>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-[#0047F7]">Ver tudo →</span>
+                <span style={{ color: 'var(--theme-primary)' }} className="text-xs font-bold">Ver tudo →</span>
               </button>
 
               {categorySummaries.map(cat => (
@@ -532,53 +643,65 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
                     setSelectedCategory(cat.name);
                     setActiveTab('products');
                   }}
-                  className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer text-left"
+                  className="w-full p-4 flex items-center justify-between hover:brightness-97 transition cursor-pointer text-left"
                 >
                   <div className="flex items-center gap-3">
                     <img
                       src={cat.coverImage}
                       alt={cat.name}
-                      className="w-11 h-11 rounded-xl object-cover bg-slate-100 border border-slate-200 shrink-0"
+                      className="w-11 h-11 rounded-xl object-cover bg-slate-100 border border-[var(--theme-card-border)] shrink-0"
                     />
                     <div>
-                      <span className="font-bold text-sm text-slate-900 block">{cat.name}</span>
-                      <span className="text-xs text-slate-500">
+                      <span className="font-bold text-sm text-[var(--theme-text-primary)] block">{cat.name}</span>
+                      <span className="text-xs text-[var(--theme-text-secondary)]">
                         {cat.count} {cat.count === 1 ? 'produto' : 'produtos'}
                       </span>
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-[#FA4802]">Abrir →</span>
+                  <span style={{ color: 'var(--theme-accent)' }} className="text-xs font-bold">Abrir →</span>
                 </button>
               ))}
             </div>
 
             {/* Store About Summary inside Categories/Info */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2 shadow-xs">
-              <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
-                <CheckCircle className="w-4 h-4 text-emerald-500" />
+            <div
+              style={{
+                backgroundColor: 'var(--theme-card-bg)',
+                borderColor: 'var(--theme-card-border)'
+              }}
+              className="rounded-2xl border p-5 space-y-2 shadow-xs"
+            >
+              <h3 className="text-sm font-black text-[var(--theme-text-primary)] flex items-center gap-1.5">
+                <CheckCircle style={{ color: 'var(--theme-badge-open)' }} className="w-4 h-4" />
                 Sobre a {store.name}
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">{store.description}</p>
-              <div className="pt-2 text-xs text-slate-500 flex flex-wrap gap-4">
+              <p className="text-xs text-[var(--theme-text-secondary)] leading-relaxed">{store.description}</p>
+              <div className="pt-2 text-xs text-[var(--theme-text-secondary)] flex flex-wrap gap-4">
                 <span>
-                  <strong className="text-slate-800">Endereço:</strong>{' '}
+                  <strong className="text-[var(--theme-text-primary)]">Endereço:</strong>{' '}
                   {store.street ? `${store.street}, ${store.number || 'S/N'} - ` : ''}Bairro {store.neighborhood}, Canaã dos Carajás
                 </span>
                 {store.phone && (
                   <span>
-                    <strong className="text-slate-800">Telefone:</strong> {store.phone}
+                    <strong className="text-[var(--theme-text-primary)]">Telefone:</strong> {store.phone}
                   </span>
                 )}
               </div>
             </div>
           </div>
         ) : displayedProducts.length === 0 ? (
-          <div className="py-16 text-center rounded-2xl bg-white border border-slate-200/80 p-8 shadow-xs">
-            <ShoppingBag className="w-11 h-11 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-slate-800">
+          <div
+            style={{
+              backgroundColor: 'var(--theme-card-bg)',
+              borderColor: 'var(--theme-card-border)'
+            }}
+            className="py-16 text-center rounded-2xl border p-8 shadow-xs"
+          >
+            <ShoppingBag className="w-11 h-11 text-[var(--theme-text-secondary)] opacity-40 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-[var(--theme-text-primary)]">
               {searchFilter ? 'Nenhum produto encontrado com essa busca' : 'Nenhum produto cadastrado no momento'}
             </h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            <p className="text-xs text-[var(--theme-text-secondary)] mt-1 max-w-sm mx-auto">
               {searchFilter
                 ? 'Tente buscar por outro termo ou limpe o filtro.'
                 : 'Este lojista está atualizando o catálogo da loja. Volte em breve!'}
@@ -586,7 +709,11 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
             {searchFilter && (
               <button
                 onClick={() => setSearchFilter('')}
-                className="mt-4 px-4 py-2 rounded-xl bg-[#0047F7] text-white text-xs font-bold hover:bg-[#0038c7] transition cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--theme-primary)',
+                  color: 'var(--theme-primary-text)'
+                }}
+                className="mt-4 px-4 py-2 rounded-xl text-xs font-bold hover:brightness-110 transition cursor-pointer"
               >
                 Limpar Busca
               </button>
@@ -606,7 +733,11 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
               return (
                 <div
                   key={prod.id}
-                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group"
+                  style={{
+                    backgroundColor: 'var(--theme-card-bg)',
+                    borderColor: 'var(--theme-card-border)'
+                  }}
+                  className="rounded-xl sm:rounded-2xl border overflow-hidden shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group"
                 >
                   {/* Square Product Image */}
                   <div className="relative aspect-square bg-slate-50 overflow-hidden">
@@ -616,12 +747,21 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                     />
                     {hasPromo && discountPct > 0 && (
-                      <span className="absolute top-0 right-0 px-2 py-0.5 rounded-bl-lg bg-[#FA4802] text-white text-[10px] font-black shadow-xs">
+                      <span
+                        style={{
+                          backgroundColor: 'var(--theme-accent)',
+                          color: 'var(--theme-accent-text)'
+                        }}
+                        className="absolute top-0 right-0 px-2 py-0.5 rounded-bl-lg text-[10px] font-black shadow-xs"
+                      >
                         -{discountPct}%
                       </span>
                     )}
                     {isOutOfStock && (
-                      <div className="absolute inset-0 bg-[#071536]/75 backdrop-blur-xs flex items-center justify-center text-white text-xs font-black uppercase tracking-wider">
+                      <div
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--theme-hero-bg) 78%, transparent)' }}
+                        className="absolute inset-0 backdrop-blur-xs flex items-center justify-center text-white text-xs font-black uppercase tracking-wider"
+                      >
                         Esgotado
                       </div>
                     )}
@@ -629,20 +769,26 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
 
                   {/* Card Details (Clean Shopee-style Density) */}
                   <div className="p-2.5 sm:p-3.5 flex-1 flex flex-col justify-between gap-2">
-                    <h3 className="text-xs sm:text-sm font-medium text-slate-800 line-clamp-2 leading-snug">
-                      <span className="inline-block align-middle mr-1.5 px-1 py-0.5 rounded bg-[#FA4802] text-white text-[9px] font-black uppercase tracking-tight leading-none">
+                    <h3 className="text-xs sm:text-sm font-medium text-[var(--theme-text-primary)] line-clamp-2 leading-snug">
+                      <span
+                        style={{
+                          backgroundColor: 'var(--theme-accent)',
+                          color: 'var(--theme-accent-text)'
+                        }}
+                        className="inline-block align-middle mr-1.5 px-1 py-0.5 rounded text-[9px] font-black uppercase tracking-tight leading-none"
+                      >
                         Oficial
                       </span>
-                      <span className="align-middle group-hover:text-[#0047F7] transition">{prod.name}</span>
+                      <span className="align-middle group-hover:text-[var(--theme-primary)] transition">{prod.name}</span>
                     </h3>
 
                     <div className="space-y-2 pt-1">
                       <div className="flex flex-wrap items-baseline gap-1.5">
-                        <span className="text-sm sm:text-base font-black text-[#FA4802]">
+                        <span style={{ color: 'var(--theme-accent)' }} className="text-sm sm:text-base font-black">
                           {formatBRL(activePrice)}
                         </span>
                         {hasPromo && (
-                          <span className="text-[10px] sm:text-xs text-slate-400 line-through">
+                          <span className="text-[10px] sm:text-xs text-[var(--theme-text-secondary)] opacity-70 line-through">
                             {formatBRL(prod.price)}
                           </span>
                         )}
@@ -662,7 +808,11 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
                           )
                         }
                         disabled={isOutOfStock}
-                        className="w-full py-2 rounded-lg sm:rounded-xl bg-[#0047F7] hover:bg-[#0038c7] text-white font-bold text-xs flex items-center justify-center gap-1 transition active:scale-95 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{
+                          backgroundColor: 'var(--theme-primary)',
+                          color: 'var(--theme-primary-text)'
+                        }}
+                        className="w-full py-2 rounded-lg sm:rounded-xl hover:brightness-110 font-bold text-xs flex items-center justify-center gap-1 transition active:scale-95 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Plus className="w-3.5 h-3.5 stroke-[3]" />
                         <span>Adicionar</span>
@@ -677,26 +827,33 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
 
         {/* 5. STORE REVIEWS */}
         {reviews.length > 0 && (
-          <div className="pt-6 border-t border-slate-200 space-y-3">
+          <div style={{ borderColor: 'var(--theme-card-border)' }} className="pt-6 border-t space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm sm:text-base font-bold text-slate-900">Avaliações dos Clientes ({reviews.length})</h3>
+              <h3 className="text-sm sm:text-base font-bold text-[var(--theme-text-primary)]">Avaliações dos Clientes ({reviews.length})</h3>
               <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600">
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> {averageRating} de 5.0
               </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {reviews.map(rev => (
-                <div key={rev.id} className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1.5">
+                <div
+                  key={rev.id}
+                  style={{
+                    backgroundColor: 'var(--theme-card-bg)',
+                    borderColor: 'var(--theme-card-border)'
+                  }}
+                  className="p-3.5 rounded-2xl border shadow-2xs space-y-1.5"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-slate-800">{rev.user_name || 'Cliente de Canaã'}</span>
+                    <span className="font-bold text-xs text-[var(--theme-text-primary)]">{rev.user_name || 'Cliente de Canaã'}</span>
                     <div className="flex items-center text-amber-400">
                       {Array.from({ length: rev.rating }).map((_, i) => (
                         <Star key={i} className="w-3 h-3 fill-amber-400" />
                       ))}
                     </div>
                   </div>
-                  <p className="text-xs text-slate-600 italic">"{rev.comment}"</p>
-                  <span className="text-[10px] text-slate-400 block">{formatDateBR(rev.created_at)}</span>
+                  <p className="text-xs text-[var(--theme-text-secondary)] italic">"{rev.comment}"</p>
+                  <span className="text-[10px] text-[var(--theme-text-secondary)] opacity-75 block">{formatDateBR(rev.created_at)}</span>
                 </div>
               ))}
             </div>
@@ -710,10 +867,17 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
           <button
             type="button"
             onClick={() => onNavigate('cart')}
-            className="w-full py-3 px-4 rounded-2xl bg-[#071536] text-white shadow-2xl flex items-center justify-between border border-white/15 active:scale-98 transition cursor-pointer"
+            style={{ backgroundColor: 'var(--theme-dark-section-bg)' }}
+            className="w-full py-3 px-4 rounded-2xl text-white shadow-2xl flex items-center justify-between border border-white/15 active:scale-98 transition cursor-pointer"
           >
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-xl bg-[#0047F7] text-white flex items-center justify-center font-black text-xs">
+              <div
+                style={{
+                  backgroundColor: 'var(--theme-primary)',
+                  color: 'var(--theme-primary-text)'
+                }}
+                className="w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs"
+              >
                 {totalItemCount}
               </div>
               <div className="text-left">
@@ -721,7 +885,13 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
                 <span className="text-[11px] text-slate-300">Total: {formatBRL(grandTotal)}</span>
               </div>
             </div>
-            <span className="px-3.5 py-1.5 rounded-xl bg-[#FA4802] text-white font-black text-xs">
+            <span
+              style={{
+                backgroundColor: 'var(--theme-accent)',
+                color: 'var(--theme-accent-text)'
+              }}
+              className="px-3.5 py-1.5 rounded-xl font-black text-xs"
+            >
               Finalizar Pedido →
             </span>
           </button>
@@ -729,7 +899,13 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
       )}
 
       {/* 7. DEDICATED STORE FOOTER */}
-      <footer className="mt-12 bg-[#071536] text-slate-300 border-t border-white/10 text-xs py-8">
+      <footer
+        style={{
+          backgroundColor: 'var(--theme-footer-bg)',
+          color: 'var(--theme-footer-text)'
+        }}
+        className="mt-12 border-t border-white/10 text-xs py-8 transition-colors"
+      >
         <div className="max-w-7xl mx-auto px-4 space-y-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-5 border-b border-white/10 text-center md:text-left">
             <div className="flex items-center gap-3">
@@ -739,8 +915,8 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
                 className="w-11 h-11 rounded-full object-cover bg-white shadow-md border-2 border-white/30"
               />
               <div>
-                <h3 className="font-extrabold text-white text-sm sm:text-base">{store.name}</h3>
-                <p className="text-[11px] text-slate-400">
+                <h3 style={{ color: 'var(--theme-header-text)' }} className="font-extrabold text-sm sm:text-base">{store.name}</h3>
+                <p className="text-[11px] opacity-80">
                   {store.street ? `${store.street}, ${store.number || 'S/N'} - ` : ''}Bairro {store.neighborhood}, Canaã dos Carajás - PA
                 </p>
               </div>
@@ -748,8 +924,8 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
 
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs">
               {store.phone && (
-                <span className="inline-flex items-center gap-1.5 text-slate-300">
-                  <Phone className="w-3.5 h-3.5 text-[#FA4802]" />
+                <span className="inline-flex items-center gap-1.5">
+                  <Phone style={{ color: 'var(--theme-accent)' }} className="w-3.5 h-3.5" />
                   {store.phone}
                 </span>
               )}
@@ -767,14 +943,15 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-400 text-[11px] text-center sm:text-left">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 opacity-85 text-[11px] text-center sm:text-left">
             <p>© {new Date().getFullYear()} {store.name}. Entregas em Canaã dos Carajás.</p>
             <div className="flex items-center gap-2">
               <span>Tecnologia por</span>
               <button
                 type="button"
                 onClick={() => onNavigate('home')}
-                className="text-blue-400 font-bold hover:underline cursor-pointer"
+                style={{ color: 'var(--theme-primary)' }}
+                className="font-bold hover:underline cursor-pointer"
               >
                 Shop da Cidade
               </button>
@@ -782,7 +959,7 @@ export const StoreDetailPage: React.FC<StoreDetailPageProps> = ({ storeSlug, onN
               <button
                 type="button"
                 onClick={() => onNavigate('partner-register')}
-                className="text-slate-300 hover:text-white underline cursor-pointer"
+                className="hover:opacity-100 underline cursor-pointer"
               >
                 Crie sua loja grátis
               </button>

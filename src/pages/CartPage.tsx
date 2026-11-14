@@ -59,17 +59,27 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
   if (items.length === 0) {
     return (
       <div className="max-w-2xl mx-auto py-20 px-4 text-center space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
+        <div
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--theme-primary) 12%, transparent)',
+            color: 'var(--theme-primary)'
+          }}
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto shadow-xs"
+        >
           <ShoppingBag className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Seu carrinho está vazio</h2>
-        <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto">
+        <h2 className="text-2xl font-bold text-[var(--theme-text-primary)] tracking-tight">Seu carrinho está vazio</h2>
+        <p className="text-xs sm:text-sm text-[var(--theme-text-secondary)] max-w-sm mx-auto">
           Explore os comércios locais de Canaã dos Carajás e adicione produtos ao seu carrinho.
         </p>
         <div className="pt-2">
           <button
             onClick={() => onNavigate('stores')}
-            className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm transition cursor-pointer"
+            style={{
+              backgroundColor: 'var(--theme-primary)',
+              color: 'var(--theme-primary-text)'
+            }}
+            className="px-6 py-3 rounded-xl hover:brightness-110 font-bold text-xs sm:text-sm transition cursor-pointer"
           >
             Explorar Lojas em Canaã
           </button>
@@ -139,11 +149,11 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
       <div>
         <button
           onClick={() => onNavigate('home')}
-          className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 mb-2 cursor-pointer"
+          className="text-xs font-semibold text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] flex items-center gap-1 mb-2 cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Continuar Comprando
         </button>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--theme-text-primary)] tracking-tight">
           Meu Carrinho ({totalItemCount} {totalItemCount === 1 ? 'item' : 'itens'})
         </h1>
         {groups.length > 1 && (
@@ -166,22 +176,38 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
           {/* Store Groups */}
           <div className="space-y-4">
             {groups.map(group => (
-              <div key={group.store_id} className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-4 shadow-xs">
+              <div
+                key={group.store_id}
+                style={{
+                  backgroundColor: 'var(--theme-card-bg)',
+                  borderColor: 'var(--theme-card-border)'
+                }}
+                className="rounded-2xl border p-5 space-y-4 shadow-xs"
+              >
                 {/* Store header */}
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div style={{ borderColor: 'var(--theme-card-border)' }} className="flex items-center justify-between pb-3 border-b">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#0047F7] flex items-center justify-center font-bold">
+                    <div
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--theme-primary) 12%, transparent)',
+                        color: 'var(--theme-primary)'
+                      }}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center font-bold"
+                    >
                       <Store className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-900">{group.store_name}</h3>
-                      <span className="text-[10px] text-slate-400">Subpedido exclusivo desta loja</span>
+                      <h3 className="font-bold text-sm text-[var(--theme-text-primary)]">{group.store_name}</h3>
+                      <span className="text-[10px] text-[var(--theme-text-secondary)]">Subpedido exclusivo desta loja</span>
                     </div>
                   </div>
 
                   <div className="text-right text-xs">
-                    <span className="text-slate-500">Taxa entrega: </span>
-                    <span className={`font-bold ${group.delivery_fee === 0 ? 'text-emerald-600' : 'text-slate-800'}`}>
+                    <span className="text-[var(--theme-text-secondary)]">Taxa entrega: </span>
+                    <span
+                      style={group.delivery_fee === 0 ? { color: 'var(--theme-badge-open)' } : undefined}
+                      className="font-bold text-[var(--theme-text-primary)]"
+                    >
                       {deliveryType === 'pickup' ? 'Retirada (R$ 0)' : group.delivery_fee > 0 ? formatBRL(group.delivery_fee) : 'Grátis'}
                     </span>
                   </div>
@@ -401,61 +427,88 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
           </div>
 
           {/* Payment Method Selector */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-4 shadow-xs text-xs">
-            <h3 className="font-bold text-sm text-slate-900">Forma de Pagamento</h3>
+          <div
+            style={{
+              backgroundColor: 'var(--theme-card-bg)',
+              borderColor: 'var(--theme-card-border)'
+            }}
+            className="rounded-2xl border p-5 space-y-4 shadow-xs text-xs"
+          >
+            <h3 className="font-bold text-sm text-[var(--theme-text-primary)]">Forma de Pagamento</h3>
             <div className="space-y-2">
               <label
                 onClick={() => setPaymentMethod('pix')}
-                className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition ${
-                  paymentMethod === 'pix' ? 'border-[#0047F7] bg-[#0047F7]/10 ring-1 ring-[#0047F7]' : 'border-slate-200'
-                }`}
+                style={
+                  paymentMethod === 'pix'
+                    ? {
+                        borderColor: 'var(--theme-primary)',
+                        backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)'
+                      }
+                    : { borderColor: 'var(--theme-card-border)' }
+                }
+                className="p-3 rounded-xl border flex items-center justify-between cursor-pointer transition"
               >
                 <div className="flex items-center gap-2.5">
-                  <QrCode className="w-4 h-4 text-[#0047F7]" />
+                  <QrCode style={{ color: 'var(--theme-primary)' }} className="w-4 h-4" />
                   <div>
-                    <span className="font-bold text-slate-900 block">PIX (Recomendado)</span>
-                    <span className="text-[10px] text-slate-500">Aprovação imediata e preparo mais rápido</span>
+                    <span className="font-bold text-[var(--theme-text-primary)] block">PIX (Recomendado)</span>
+                    <span className="text-[10px] text-[var(--theme-text-secondary)]">Aprovação imediata e preparo mais rápido</span>
                   </div>
                 </div>
-                <input type="radio" checked={paymentMethod === 'pix'} readOnly className="accent-[#0047F7]" />
+                <input type="radio" checked={paymentMethod === 'pix'} readOnly className="accent-[var(--theme-primary)]" />
               </label>
 
               <label
                 onClick={() => setPaymentMethod('delivery_card')}
-                className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition ${
-                  paymentMethod === 'delivery_card' ? 'border-[#0047F7] bg-[#0047F7]/10 ring-1 ring-[#0047F7]' : 'border-slate-200'
-                }`}
+                style={
+                  paymentMethod === 'delivery_card'
+                    ? {
+                        borderColor: 'var(--theme-primary)',
+                        backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)'
+                      }
+                    : { borderColor: 'var(--theme-card-border)' }
+                }
+                className="p-3 rounded-xl border flex items-center justify-between cursor-pointer transition"
               >
                 <div className="flex items-center gap-2.5">
-                  <CreditCard className="w-4 h-4 text-slate-700" />
+                  <CreditCard className="w-4 h-4 text-[var(--theme-text-primary)]" />
                   <div>
-                    <span className="font-bold text-slate-900 block">Cartão na Entrega / Retirada</span>
-                    <span className="text-[10px] text-slate-500">Pague na maquininha do entregador ou balcão</span>
+                    <span className="font-bold text-[var(--theme-text-primary)] block">Cartão na Entrega / Retirada</span>
+                    <span className="text-[10px] text-[var(--theme-text-secondary)]">Pague na maquininha do entregador ou balcão</span>
                   </div>
                 </div>
-                <input type="radio" checked={paymentMethod === 'delivery_card'} readOnly className="accent-[#0047F7]" />
+                <input type="radio" checked={paymentMethod === 'delivery_card'} readOnly className="accent-[var(--theme-primary)]" />
               </label>
 
               <label
                 onClick={() => setPaymentMethod('delivery_cash')}
-                className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition ${
-                  paymentMethod === 'delivery_cash' ? 'border-[#0047F7] bg-[#0047F7]/10 ring-1 ring-[#0047F7]' : 'border-slate-200'
-                }`}
+                style={
+                  paymentMethod === 'delivery_cash'
+                    ? {
+                        borderColor: 'var(--theme-primary)',
+                        backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)'
+                      }
+                    : { borderColor: 'var(--theme-card-border)' }
+                }
+                className="p-3 rounded-xl border flex items-center justify-between cursor-pointer transition"
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="font-black text-[#0047F7] text-sm">R$</span>
+                  <span style={{ color: 'var(--theme-primary)' }} className="font-black text-sm">R$</span>
                   <div>
-                    <span className="font-bold text-slate-900 block">Dinheiro na Entrega</span>
-                    <span className="text-[10px] text-slate-500">Pague em espécie ao receber o pedido</span>
+                    <span className="font-bold text-[var(--theme-text-primary)] block">Dinheiro na Entrega</span>
+                    <span className="text-[10px] text-[var(--theme-text-secondary)]">Pague em espécie ao receber o pedido</span>
                   </div>
                 </div>
-                <input type="radio" checked={paymentMethod === 'delivery_cash'} readOnly className="accent-[#0047F7]" />
+                <input type="radio" checked={paymentMethod === 'delivery_cash'} readOnly className="accent-[var(--theme-primary)]" />
               </label>
             </div>
           </div>
 
           {/* Order Summary & Submit */}
-          <div className="bg-[#071536] rounded-2xl border border-slate-800 p-5 space-y-4 text-white shadow-xl">
+          <div
+            style={{ backgroundColor: 'var(--theme-dark-section-bg)' }}
+            className="rounded-2xl border border-white/10 p-5 space-y-4 text-white shadow-xl transition-colors"
+          >
             <h3 className="font-bold text-base tracking-tight">Resumo do Pedido</h3>
             <div className="space-y-2 text-xs text-slate-300">
               <div className="flex justify-between">
@@ -468,22 +521,26 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                   {deliveryType === 'pickup' ? 'R$ 0,00 (Retirada)' : formatBRL(effectiveDeliveryTotal)}
                 </span>
               </div>
-              <div className="pt-3 border-t border-slate-800 flex justify-between items-baseline">
+              <div className="pt-3 border-t border-white/10 flex justify-between items-baseline">
                 <span className="text-sm font-bold text-white">Total a pagar:</span>
-                <span className="text-xl font-black text-[#FA4802]">{formatBRL(finalTotal)}</span>
+                <span style={{ color: 'var(--theme-accent)' }} className="text-xl font-black">{formatBRL(finalTotal)}</span>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] font-black text-white text-sm tracking-wide shadow-lg shadow-orange-950/40 transition active:scale-95 cursor-pointer disabled:opacity-50"
+              style={{
+                backgroundColor: 'var(--theme-accent)',
+                color: 'var(--theme-accent-text)'
+              }}
+              className="w-full py-3.5 rounded-xl hover:brightness-110 font-black text-sm tracking-wide shadow-lg transition active:scale-95 cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Gerando Pedido...' : 'Confirmar e Fechar Pedido'}
             </button>
 
             <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#0047F7]" />
+              <ShieldCheck style={{ color: 'var(--theme-primary)' }} className="w-3.5 h-3.5" />
               <span>Compra 100% segura pelo Shop da Cidade — Canaã dos Carajás</span>
             </div>
           </div>

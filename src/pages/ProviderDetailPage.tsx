@@ -132,8 +132,8 @@ export const ProviderDetailPage: React.FC<ProviderDetailPageProps> = ({ provider
 
   if (isLoading) {
     return (
-      <div className="py-24 flex justify-center text-slate-400">
-        <div className="w-8 h-8 border-3 border-teal-500 border-t-transparent rounded-full animate-spin" />
+      <div className="py-24 flex justify-center text-[var(--theme-text-secondary)]">
+        <div className="w-8 h-8 border-3 border-[var(--theme-primary)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -141,12 +141,12 @@ export const ProviderDetailPage: React.FC<ProviderDetailPageProps> = ({ provider
   if (error || !provider) {
     return (
       <div className="max-w-2xl mx-auto py-16 px-4 text-center">
-        <Wrench className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-        <h2 className="text-xl font-bold text-slate-800">Prestador não encontrado</h2>
-        <p className="text-xs text-slate-500 mt-1">{error || 'O profissional não está disponível no momento.'}</p>
+        <Wrench className="w-12 h-12 text-[var(--theme-text-secondary)] opacity-50 mx-auto mb-3" />
+        <h2 className="text-xl font-bold text-[var(--theme-text-primary)]">Prestador não encontrado</h2>
+        <p className="text-xs text-[var(--theme-text-secondary)] mt-1">{error || 'O profissional não está disponível no momento.'}</p>
         <button
           onClick={() => onNavigate('services')}
-          className="mt-5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold"
+          className="mt-5 px-4 py-2 rounded-xl bg-[var(--theme-primary)] text-[var(--theme-primary-text)] text-xs font-semibold cursor-pointer"
         >
           Voltar para Serviços
         </button>
@@ -165,45 +165,51 @@ export const ProviderDetailPage: React.FC<ProviderDetailPageProps> = ({ provider
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       <button
         onClick={() => onNavigate('services')}
-        className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
+        className="text-xs font-semibold text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] flex items-center gap-1 cursor-pointer"
       >
         <ArrowLeft className="w-3.5 h-3.5" /> Voltar para Prestadores de Serviços
       </button>
 
       {/* Profile Card */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
+      <div className="bg-[var(--theme-card-bg)] rounded-3xl border border-[var(--theme-card-border)] p-6 sm:p-8 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-start gap-5">
             <img
               src={provider.photo_url || 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=200&h=200&fit=crop&q=80'}
               alt={provider.business_name}
-              className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-teal-500/30 shadow-md shrink-0"
+              className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-[var(--theme-primary)]/40 shadow-md shrink-0"
             />
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 text-[11px] font-bold uppercase tracking-wider">
+                <span
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--theme-primary) 12%, transparent)',
+                    color: 'var(--theme-primary)'
+                  }}
+                  className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider"
+                >
                   {provider.category_name}
                 </span>
-                <span className="flex items-center gap-1 text-[11px] text-teal-700 font-bold">
+                <span className="flex items-center gap-1 text-[11px] text-[var(--theme-badge-open)] font-bold">
                   <CheckCircle2 className="w-3.5 h-3.5" /> Profissional Verificado
                 </span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--theme-text-primary)] tracking-tight">
                 {provider.business_name}
               </h1>
 
-              <div className="flex items-center gap-3 text-xs text-slate-500">
+              <div className="flex items-center gap-3 text-xs text-[var(--theme-text-secondary)]">
                 <div className="flex items-center text-amber-500 font-bold">
                   <Star className="w-4 h-4 fill-amber-400 mr-1" />
                   {provider.rating_average.toFixed(1)}
-                  <span className="text-slate-400 font-normal ml-1">({provider.total_reviews} avaliações)</span>
+                  <span className="text-[var(--theme-text-secondary)] font-normal ml-1">({provider.total_reviews} avaliações)</span>
                 </div>
                 <span>•</span>
                 <span>Canaã dos Carajás, PA</span>
               </div>
 
-              <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed pt-1">
+              <p className="text-xs sm:text-sm text-[var(--theme-text-secondary)] max-w-2xl leading-relaxed pt-1">
                 {provider.description || provider.specialty}
               </p>
             </div>
@@ -213,24 +219,24 @@ export const ProviderDetailPage: React.FC<ProviderDetailPageProps> = ({ provider
           <div className="flex flex-col gap-2.5 shrink-0 w-full sm:w-auto">
             <button
               onClick={() => { setIsQuoteOpen(true); setQuoteSuccessMsg(null); }}
-              className="px-5 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition active:scale-95 cursor-pointer"
+              className="px-5 py-3 rounded-xl bg-[var(--theme-primary)] hover:opacity-90 text-[var(--theme-primary-text)] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition active:scale-95 cursor-pointer"
             >
               <MessageSquare className="w-4 h-4" />
               Solicitar Orçamento Grátis
             </button>
             <button
               onClick={() => { setIsScheduleOpen(true); setSchedSuccessMsg(null); setSchedError(null); }}
-              className="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+              className="px-5 py-3 rounded-xl bg-[var(--theme-dark-section-bg)] hover:opacity-90 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer"
             >
               <Calendar className="w-4 h-4" />
               Agendar Visita / Serviço
             </button>
             {provider.whatsapp && (
               <a
-                href={`https://wa.me/55${provider.whatsapp.replace(/\D/g, '')}?text=Olá,%20vi%20seu%20perfil%20no%20Shop%20Carajás!`}
+                href={`https://wa.me/55${provider.whatsapp.replace(/\D/g, '')}?text=Olá,%20vi%20seu%20perfil%20no%20Shop%20da%20Cidade!`}
                 target="_blank"
                 rel="noreferrer"
-                className="px-5 py-2.5 rounded-xl border border-emerald-500 text-emerald-700 hover:bg-emerald-50 font-bold text-xs flex items-center justify-center gap-2 transition"
+                className="px-5 py-2.5 rounded-xl border border-[var(--theme-badge-open)] text-[var(--theme-badge-open)] hover:opacity-80 font-bold text-xs flex items-center justify-center gap-2 transition"
               >
                 <MessageCircle className="w-4 h-4" />
                 WhatsApp Direto
@@ -240,20 +246,20 @@ export const ProviderDetailPage: React.FC<ProviderDetailPageProps> = ({ provider
         </div>
 
         {/* Informações de Atendimento */}
-        <div className="mt-8 pt-6 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+        <div className="mt-8 pt-6 border-t border-[var(--theme-card-border)] grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
           <div>
-            <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] mb-1">Preço Inicial</h4>
-            <p className="text-base font-black text-teal-700">
+            <h4 className="font-bold text-[var(--theme-text-primary)] uppercase tracking-wider text-[11px] mb-1">Preço Inicial</h4>
+            <p className="text-base font-black text-[var(--theme-accent)]">
               {provider.starting_price > 0 ? formatBRL(provider.starting_price) : 'Sob Consulta'}
             </p>
-            <span className="text-[10px] text-slate-400">Varia conforme a complexidade e peças</span>
+            <span className="text-[10px] text-[var(--theme-text-secondary)]">Varia conforme a complexidade e peças</span>
           </div>
 
           <div>
-            <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] mb-1">Bairros Atendidos em Canaã</h4>
+            <h4 className="font-bold text-[var(--theme-text-primary)] uppercase tracking-wider text-[11px] mb-1">Bairros Atendidos em Canaã</h4>
             <div className="flex flex-wrap gap-1 mt-1">
               {coveredNeighborhoods.map((b, i) => (
-                <span key={i} className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium">
+                <span key={i} className="px-2 py-0.5 rounded-md bg-[var(--theme-page-bg)] border border-[var(--theme-card-border)] text-[var(--theme-text-primary)] text-[10px] font-medium">
                   {b}
                 </span>
               ))}
@@ -261,9 +267,9 @@ export const ProviderDetailPage: React.FC<ProviderDetailPageProps> = ({ provider
           </div>
 
           <div>
-            <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] mb-1">Disponibilidade</h4>
-            <div className="flex items-center gap-1.5 text-emerald-700 font-semibold mt-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <h4 className="font-bold text-[var(--theme-text-primary)] uppercase tracking-wider text-[11px] mb-1">Disponibilidade</h4>
+            <div className="flex items-center gap-1.5 text-[var(--theme-badge-open)] font-semibold mt-1">
+              <span className="w-2 h-2 rounded-full bg-[var(--theme-badge-open)] animate-pulse" />
               <span>Disponível para novos atendimentos</span>
             </div>
           </div>
@@ -271,24 +277,24 @@ export const ProviderDetailPage: React.FC<ProviderDetailPageProps> = ({ provider
       </div>
 
       {/* Avaliações Verificadas */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-4">
-        <h3 className="text-lg font-bold text-slate-900">Avaliações Verificadas ({reviews.length})</h3>
+      <div className="bg-[var(--theme-card-bg)] rounded-3xl border border-[var(--theme-card-border)] p-6 sm:p-8 shadow-xs space-y-4">
+        <h3 className="text-lg font-bold text-[var(--theme-text-primary)]">Avaliações Verificadas ({reviews.length})</h3>
         {reviews.length === 0 ? (
-          <p className="text-xs text-slate-500">Este prestador ainda não possui avaliações públicas registradas.</p>
+          <p className="text-xs text-[var(--theme-text-secondary)]">Este prestador ainda não possui avaliações públicas registradas.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {reviews.map(r => (
-              <div key={r.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
+              <div key={r.id} className="p-4 rounded-xl bg-[var(--theme-page-bg)] border border-[var(--theme-card-border)] space-y-2 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">{r.user_name || 'Morador de Canaã'}</span>
+                  <span className="font-bold text-[var(--theme-text-primary)]">{r.user_name || 'Morador de Canaã'}</span>
                   <div className="flex items-center text-amber-500">
                     {Array.from({ length: r.rating }).map((_, i) => (
                       <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
                     ))}
                   </div>
                 </div>
-                <p className="text-slate-600 italic">"{r.comment}"</p>
-                <span className="text-[10px] text-slate-400 block">{formatDateBR(r.created_at)}</span>
+                <p className="text-[var(--theme-text-secondary)] italic">"{r.comment}"</p>
+                <span className="text-[10px] text-[var(--theme-text-secondary)] opacity-80 block">{formatDateBR(r.created_at)}</span>
               </div>
             ))}
           </div>

@@ -114,22 +114,36 @@ export const CategoryBubbles: React.FC<CategoryBubblesProps> = ({
           <button
             type="button"
             onClick={() => onSelectCategory(null)}
-            className={`group shrink-0 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-200 cursor-pointer snap-start border text-xs font-bold ${
+            style={
               isAllSelected
-                ? 'bg-[#0047F7] border-[#0047F7] text-white shadow-md ring-2 ring-[#0047F7]/30'
-                : 'bg-white border-slate-200 text-slate-700 hover:border-[#0047F7] hover:text-[#0047F7]'
+                ? {
+                    backgroundColor: 'var(--theme-primary)',
+                    borderColor: 'var(--theme-primary)',
+                    color: 'var(--theme-primary-text)'
+                  }
+                : {
+                    backgroundColor: 'var(--theme-card-bg)',
+                    borderColor: 'var(--theme-card-border)',
+                    color: 'var(--theme-text-primary)'
+                  }
+            }
+            className={`group shrink-0 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-200 cursor-pointer snap-start border text-xs font-bold ${
+              isAllSelected ? 'shadow-md' : 'hover:border-[var(--theme-primary)]'
             }`}
           >
             <div
-              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
-                isAllSelected ? 'bg-[#FA4802] text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-[#0047F7]'
-              }`}
+              style={
+                isAllSelected
+                  ? { backgroundColor: 'var(--theme-accent)', color: 'var(--theme-accent-text)' }
+                  : { backgroundColor: 'var(--theme-page-bg)', color: 'var(--theme-text-secondary)' }
+              }
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors shadow-xs"
             >
               <Layers className="w-4 h-4" />
             </div>
             <div className="text-left">
               <span className="block leading-tight">Todas as Lojas</span>
-              <span className={`text-[10px] ${isAllSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+              <span className={`text-[10px] ${isAllSelected ? 'opacity-80' : 'opacity-65'}`}>
                 Ver tudo
               </span>
             </div>
@@ -146,22 +160,36 @@ export const CategoryBubbles: React.FC<CategoryBubblesProps> = ({
               key={cat.id || cat.slug}
               type="button"
               onClick={() => onSelectCategory(active ? null : cat)}
-              className={`group shrink-0 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-200 cursor-pointer snap-start border text-xs font-bold ${
+              style={
                 active
-                  ? 'bg-[#0047F7] border-[#0047F7] text-white shadow-md ring-2 ring-[#0047F7]/30 scale-102'
-                  : 'bg-white border-slate-200 text-slate-700 hover:border-[#0047F7] hover:text-[#0047F7]'
+                  ? {
+                      backgroundColor: 'var(--theme-primary)',
+                      borderColor: 'var(--theme-primary)',
+                      color: 'var(--theme-primary-text)'
+                    }
+                  : {
+                      backgroundColor: 'var(--theme-card-bg)',
+                      borderColor: 'var(--theme-card-border)',
+                      color: 'var(--theme-text-primary)'
+                    }
+              }
+              className={`group shrink-0 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-200 cursor-pointer snap-start border text-xs font-bold ${
+                active ? 'shadow-md scale-102' : 'hover:border-[var(--theme-primary)]'
               }`}
             >
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
-                  active ? 'bg-[#FA4802] text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-[#0047F7]'
-                }`}
+                style={
+                  active
+                    ? { backgroundColor: 'var(--theme-accent)', color: 'var(--theme-accent-text)' }
+                    : { backgroundColor: 'var(--theme-page-bg)', color: 'var(--theme-text-secondary)' }
+                }
+                className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors shadow-xs"
               >
                 {renderCategoryIcon(cat.icon, cat.name)}
               </div>
               <div className="text-left">
                 <span className="block leading-tight">{cat.name}</span>
-                <span className={`text-[10px] ${active ? 'text-blue-100' : 'text-slate-400'}`}>
+                <span className={`text-[10px] ${active ? 'opacity-80' : 'opacity-65'}`}>
                   {count} {count === 1 ? 'loja' : 'lojas'}
                 </span>
               </div>

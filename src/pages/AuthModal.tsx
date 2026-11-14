@@ -152,7 +152,11 @@ export const AuthModal: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting || !twoFactorCode.trim()}
-              className="w-full mt-2 py-3 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] font-black text-white text-sm shadow-lg shadow-orange-950/30 transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+              style={{
+                backgroundColor: 'var(--theme-accent)',
+                color: 'var(--theme-accent-text)'
+              }}
+              className="w-full mt-2 py-3 rounded-xl hover:brightness-110 font-black text-sm shadow-lg transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
             >
               {isSubmitting ? 'Validando...' : 'Verificar e Entrar'}
             </button>
@@ -177,8 +181,9 @@ export const AuthModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => { setMode('login'); setError(null); }}
+                style={mode === 'login' ? { backgroundColor: 'var(--theme-primary)', color: 'var(--theme-primary-text)' } : undefined}
                 className={`py-2 rounded-lg transition cursor-pointer font-bold ${
-                  mode === 'login' ? 'bg-[#0047F7] text-white shadow-md' : 'text-slate-400 hover:text-white'
+                  mode === 'login' ? 'shadow-md' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Já tenho conta
@@ -186,8 +191,9 @@ export const AuthModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => { setMode('register'); setError(null); }}
+                style={mode === 'register' ? { backgroundColor: 'var(--theme-primary)', color: 'var(--theme-primary-text)' } : undefined}
                 className={`py-2 rounded-lg transition cursor-pointer font-bold ${
-                  mode === 'register' ? 'bg-[#0047F7] text-white shadow-md' : 'text-slate-400 hover:text-white'
+                  mode === 'register' ? 'shadow-md' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Quero me cadastrar
@@ -296,7 +302,11 @@ export const AuthModal: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full mt-2 py-3 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] font-black text-white text-sm shadow-lg shadow-orange-950/30 transition disabled:opacity-50 cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--theme-accent)',
+                  color: 'var(--theme-accent-text)'
+                }}
+                className="w-full mt-2 py-3 rounded-xl hover:brightness-110 font-black text-sm shadow-lg transition disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? 'Processando...' : mode === 'login' ? 'Entrar no Shop da Cidade' : 'Concluir Cadastro'}
               </button>

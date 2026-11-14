@@ -97,30 +97,37 @@ export const StoresPage: React.FC<StoresPageProps> = ({
         <div>
           <button
             onClick={() => onNavigate('home')}
-            className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 mb-2 cursor-pointer"
+            className="text-xs font-semibold text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] flex items-center gap-1 mb-2 cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Voltar para o início
           </button>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--theme-text-primary)] tracking-tight">
             Lojas e Comércios de Canaã dos Carajás
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-[var(--theme-text-secondary)] mt-1">
             Selecione uma categoria abaixo para ver instantaneamente as lojas ativas em cada segmento.
           </p>
         </div>
       </div>
 
       {/* Category Selection Bar */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+      <div
+        style={{
+          backgroundColor: 'var(--theme-card-bg)',
+          borderColor: 'var(--theme-card-border)'
+        }}
+        className="p-4 sm:p-5 rounded-2xl border shadow-xs space-y-3"
+      >
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <span className="text-xs font-bold text-[var(--theme-text-primary)] uppercase tracking-wider flex items-center gap-1.5">
+            <span style={{ backgroundColor: 'var(--theme-accent)' }} className="w-2 h-2 rounded-full animate-pulse" />
             Categorias • Toque para filtrar lojas
           </span>
           {selectedCategory && (
             <button
               onClick={() => setSelectedCategory('')}
-              className="text-xs text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1 cursor-pointer"
+              style={{ color: 'var(--theme-primary)' }}
+              className="text-xs hover:opacity-80 font-semibold flex items-center gap-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" /> Limpar filtro de categoria
             </button>
@@ -137,16 +144,24 @@ export const StoresPage: React.FC<StoresPageProps> = ({
 
       {/* Active Category Status Banner */}
       {selectedCategory && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs text-emerald-900">
+        <div
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--theme-badge-open) 12%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--theme-badge-open) 35%, transparent)',
+            color: 'var(--theme-text-primary)'
+          }}
+          className="p-3.5 rounded-xl border flex items-center justify-between text-xs"
+        >
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <CheckCircle2 style={{ color: 'var(--theme-badge-open)' }} className="w-4 h-4" />
             <span>
               Exibindo <strong>{stores.length}</strong> {stores.length === 1 ? 'loja ativa' : 'lojas ativas'} na categoria <strong>{selectedCategory}</strong>
             </span>
           </div>
           <button
             onClick={() => setSelectedCategory('')}
-            className="font-bold underline text-emerald-800 hover:text-emerald-950 cursor-pointer"
+            style={{ color: 'var(--theme-primary)' }}
+            className="font-bold underline hover:opacity-80 cursor-pointer"
           >
             Ver todas as categorias
           </button>
@@ -154,7 +169,13 @@ export const StoresPage: React.FC<StoresPageProps> = ({
       )}
 
       {/* Search & Secondary Filters */}
-      <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
+      <div
+        style={{
+          backgroundColor: 'var(--theme-card-bg)',
+          borderColor: 'var(--theme-card-border)'
+        }}
+        className="p-4 rounded-2xl border shadow-xs space-y-4"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Search */}
           <div className="relative">
@@ -163,9 +184,14 @@ export const StoresPage: React.FC<StoresPageProps> = ({
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar por nome da loja ou produto..."
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+              style={{
+                backgroundColor: 'var(--theme-page-bg)',
+                borderColor: 'var(--theme-card-border)',
+                color: 'var(--theme-text-primary)'
+              }}
+              className="w-full pl-9 pr-3 py-2 border rounded-xl text-xs focus:outline-none focus:border-[var(--theme-primary)]"
             />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-[var(--theme-text-secondary)] absolute left-3 top-2.5" />
           </div>
 
           {/* Neighborhood filter */}
@@ -173,7 +199,12 @@ export const StoresPage: React.FC<StoresPageProps> = ({
             <select
               value={neighborhood}
               onChange={e => setNeighborhood(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer"
+              style={{
+                backgroundColor: 'var(--theme-page-bg)',
+                borderColor: 'var(--theme-card-border)',
+                color: 'var(--theme-text-primary)'
+              }}
+              className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:border-[var(--theme-primary)] cursor-pointer"
             >
               <option value="">Todos os bairros de Canaã</option>
               {CANAA_NEIGHBORHOODS.map(b => (
@@ -186,21 +217,34 @@ export const StoresPage: React.FC<StoresPageProps> = ({
 
       {/* Stores Grid */}
       {isLoading ? (
-        <div className="py-20 flex justify-center text-slate-400 text-sm">
-          <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <div className="py-20 flex justify-center text-[var(--theme-text-secondary)] text-sm">
+          <div
+            style={{ borderColor: 'var(--theme-primary)', borderTopColor: 'transparent' }}
+            className="w-8 h-8 border-3 rounded-full animate-spin"
+          />
         </div>
       ) : stores.length === 0 ? (
-        <div className="py-16 text-center rounded-2xl bg-white border border-slate-200 p-8">
-          <StoreIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-800">Nenhuma loja encontrada com esses filtros</h3>
-          <p className="text-xs text-slate-500 mt-1">Tente selecionar outro bairro ou limpar a busca.</p>
+        <div
+          style={{
+            backgroundColor: 'var(--theme-card-bg)',
+            borderColor: 'var(--theme-card-border)'
+          }}
+          className="py-16 text-center rounded-2xl border p-8"
+        >
+          <StoreIcon className="w-12 h-12 text-[var(--theme-text-secondary)] opacity-40 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-[var(--theme-text-primary)]">Nenhuma loja encontrada com esses filtros</h3>
+          <p className="text-xs text-[var(--theme-text-secondary)] mt-1">Tente selecionar outro bairro ou limpar a busca.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {stores.map(store => (
             <div
               key={store.id}
-              className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-lg transition flex flex-col justify-between group"
+              style={{
+                backgroundColor: 'var(--theme-card-bg)',
+                borderColor: 'var(--theme-card-border)'
+              }}
+              className="rounded-2xl border overflow-hidden shadow-xs hover:shadow-lg transition flex flex-col justify-between group"
             >
               <div className="relative h-40 bg-slate-100 overflow-hidden">
                 <img
@@ -209,7 +253,7 @@ export const StoresPage: React.FC<StoresPageProps> = ({
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                 />
                 <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-emerald-400" />
+                  <Clock style={{ color: 'var(--theme-badge-open)' }} className="w-3 h-3" />
                   <span>{store.delivery_time_min || '30-50 min'}</span>
                 </div>
               </div>
@@ -223,31 +267,35 @@ export const StoresPage: React.FC<StoresPageProps> = ({
                       className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow -mt-8 shrink-0 bg-white"
                     />
                     <div className="flex-1">
-                      <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">{store.category}</span>
-                      <h3 className="font-bold text-base text-slate-900 group-hover:text-emerald-700 transition leading-snug">
+                      <span style={{ color: 'var(--theme-primary)' }} className="text-[10px] font-bold uppercase tracking-wider">{store.category}</span>
+                      <h3 className="font-bold text-base text-[var(--theme-text-primary)] group-hover:text-[var(--theme-primary)] transition leading-snug">
                         {store.name}
                       </h3>
                     </div>
                   </div>
 
-                  <p className="mt-2 text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                  <p className="mt-2 text-xs text-[var(--theme-text-secondary)] line-clamp-2 leading-relaxed">
                     {store.description}
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <div className="flex items-center gap-1 text-slate-600">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                <div style={{ borderColor: 'var(--theme-card-border)' }} className="pt-3 border-t flex items-center justify-between text-xs text-[var(--theme-text-secondary)]">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 opacity-70" />
                     <span>Bairro {store.neighborhood}</span>
                   </div>
-                  <div className="font-semibold text-slate-700">
+                  <div className="font-semibold text-[var(--theme-text-primary)]">
                     Taxa: {store.delivery_fee_base > 0 ? formatBRL(store.delivery_fee_base) : 'Grátis'}
                   </div>
                 </div>
 
                 <button
                   onClick={() => onNavigate('store-detail', store.slug)}
-                  className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+                  style={{
+                    backgroundColor: 'var(--theme-primary)',
+                    color: 'var(--theme-primary-text)'
+                  }}
+                  className="w-full py-2.5 rounded-xl hover:brightness-110 text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
                 >
                   Ver Loja e Catálogo
                 </button>

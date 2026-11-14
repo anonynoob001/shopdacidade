@@ -56,40 +56,49 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header 
-      style={{ backgroundColor: settings.secondary_color || '#0f172a' }}
-      className="relative z-40 border-b border-slate-800 text-white shadow-md transition-colors"
+    <header
+      style={{
+        backgroundColor: 'var(--theme-header-bg)',
+        color: 'var(--theme-header-text)'
+      }}
+      className="relative z-40 border-b border-white/10 shadow-md transition-colors"
     >
       {/* Top Banner Notice (configured in Super Admin Panel) */}
-      {settings.banner_notice && (() => {
-        const bg = settings.primary_color || '#0047F7';
-        const isBrightBg = /^#(a2fa07|fdca04|dffa7d)/i.test(bg.trim());
-        return (
-          <div 
-            style={{ backgroundColor: bg }}
-            className={`${isBrightBg ? 'text-slate-950' : 'text-white'} font-bold px-4 py-1.5 text-center text-xs flex items-center justify-center gap-2 shadow-xs transition-colors`}
-          >
-            <Megaphone className={`w-3.5 h-3.5 shrink-0 ${isBrightBg ? 'text-slate-950' : 'text-[#FA4802]'}`} />
-            <span className="truncate">{settings.banner_notice}</span>
-          </div>
-        );
-      })()}
+      {settings.banner_notice && (
+        <div
+          style={{
+            backgroundColor: 'var(--theme-notice-bg)',
+            color: 'var(--theme-notice-text)'
+          }}
+          className="font-bold px-4 py-1.5 text-center text-xs flex items-center justify-center gap-2 shadow-xs transition-colors"
+        >
+          <Megaphone className="w-3.5 h-3.5 shrink-0 opacity-90" />
+          <span className="truncate">{settings.banner_notice}</span>
+        </div>
+      )}
 
       {/* Top micro bar with location and quick switcher */}
-      <div className="bg-[#050e24] px-4 py-1.5 text-xs text-slate-300 border-b border-blue-950/60">
+      <div
+        style={{
+          backgroundColor: 'var(--theme-topbar-bg)',
+          color: 'var(--theme-header-text)'
+        }}
+        className="px-4 py-1.5 text-xs border-b border-white/10 transition-colors"
+      >
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           {/* Location indicator */}
           <div className="flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-[#FA4802] shrink-0" />
-            <span className="font-semibold text-slate-200">
+            <MapPin style={{ color: 'var(--theme-accent)' }} className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-semibold opacity-90">
               {settings.city_name || 'Canaã dos Carajás'}, {settings.city_state || 'PA'}
             </span>
-            <span className="text-slate-600">|</span>
+            <span className="opacity-35">|</span>
             <div className="relative inline-block">
               <select
                 value={selectedNeighborhood}
                 onChange={e => onSelectNeighborhood(e.target.value)}
-                className="bg-transparent border-none text-[#FA4802] font-semibold text-xs focus:ring-0 cursor-pointer pr-4 appearance-none hover:brightness-110 transition"
+                style={{ color: 'var(--theme-accent)' }}
+                className="bg-transparent border-none font-semibold text-xs focus:ring-0 cursor-pointer pr-4 appearance-none hover:brightness-110 transition"
               >
                 <option value="" className="bg-slate-900 text-slate-200">Todos os bairros</option>
                 {CANAA_NEIGHBORHOODS.map(b => (
@@ -133,13 +142,20 @@ export const Header: React.FC<HeaderProps> = ({
                 onChange={e => onSearchChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Buscar lojas, produtos ou serviços em Canaã..."
-                className="w-full pl-9 pr-24 py-2 bg-slate-900/90 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-[#0047F7] focus:ring-1 focus:ring-[#0047F7] transition"
+                style={{
+                  backgroundColor: 'var(--theme-header-input-bg)',
+                  color: 'var(--theme-header-text)'
+                }}
+                className="w-full pl-9 pr-24 py-2 border border-white/15 rounded-xl text-sm placeholder:opacity-55 focus:outline-none focus:border-[var(--theme-primary)] focus:ring-1 focus:ring-[var(--theme-primary)] transition"
               />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 opacity-60 absolute left-3 top-2.5" />
               <button
                 onClick={onSearchSubmit}
-                style={{ backgroundColor: settings.accent_color || '#FA4802' }}
-                className="absolute right-1.5 top-1.5 px-3 py-1 text-white rounded-lg text-xs font-black transition cursor-pointer shadow-xs hover:brightness-110 active:scale-95"
+                style={{
+                  backgroundColor: 'var(--theme-accent)',
+                  color: 'var(--theme-accent-text)'
+                }}
+                className="absolute right-1.5 top-1.5 px-3 py-1 rounded-lg text-xs font-black transition cursor-pointer shadow-xs hover:brightness-110 active:scale-95"
               >
                 Buscar
               </button>
@@ -151,24 +167,27 @@ export const Header: React.FC<HeaderProps> = ({
             <nav className="hidden lg:flex items-center gap-1 text-sm font-medium mr-2">
               <button
                 onClick={() => onNavigate('stores')}
-                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                  currentView === 'stores' ? 'text-emerald-400 bg-slate-800' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                style={currentView === 'stores' ? { backgroundColor: 'var(--theme-primary)', color: 'var(--theme-primary-text)' } : undefined}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer font-semibold ${
+                  currentView === 'stores' ? 'shadow-xs' : 'opacity-85 hover:opacity-100 hover:bg-white/10'
                 }`}
               >
                 Lojas
               </button>
               <button
                 onClick={() => onNavigate('services')}
-                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                  currentView === 'services' ? 'text-emerald-400 bg-slate-800' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                style={currentView === 'services' ? { backgroundColor: 'var(--theme-primary)', color: 'var(--theme-primary-text)' } : undefined}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer font-semibold ${
+                  currentView === 'services' ? 'shadow-xs' : 'opacity-85 hover:opacity-100 hover:bg-white/10'
                 }`}
               >
                 Serviços
               </button>
               <button
                 onClick={() => onNavigate('products')}
-                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                  currentView === 'products' ? 'text-emerald-400 bg-slate-800' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                style={currentView === 'products' ? { backgroundColor: 'var(--theme-primary)', color: 'var(--theme-primary-text)' } : undefined}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer font-semibold ${
+                  currentView === 'products' ? 'shadow-xs' : 'opacity-85 hover:opacity-100 hover:bg-white/10'
                 }`}
               >
                 Produtos
@@ -178,14 +197,21 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Cart Button with Count Badge */}
             <button
               onClick={() => onNavigate('cart')}
-              className="relative p-2 rounded-xl bg-slate-800/90 hover:bg-slate-750 text-white border border-slate-700/80 transition cursor-pointer"
+              style={{
+                backgroundColor: 'var(--theme-header-input-bg)',
+                color: 'var(--theme-header-text)'
+              }}
+              className="relative p-2 rounded-xl border border-white/15 hover:brightness-110 transition cursor-pointer"
               title="Ver meu carrinho"
             >
-              <ShoppingBag className="w-5 h-5 text-white" />
+              <ShoppingBag className="w-5 h-5" />
               {totalItemCount > 0 && (
-                <span 
-                  style={{ backgroundColor: settings.accent_color || '#FA4802', color: '#FFFFFF' }}
-                  className="absolute -top-1 -right-1 text-white text-[10px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shadow"
+                <span
+                  style={{
+                    backgroundColor: 'var(--theme-accent)',
+                    color: 'var(--theme-accent-text)'
+                  }}
+                  className="absolute -top-1 -right-1 text-[10px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shadow"
                 >
                   {totalItemCount > 9 ? '9+' : totalItemCount}
                 </span>
@@ -289,8 +315,11 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <button
                 onClick={() => openAuthModal('login')}
-                style={{ backgroundColor: settings.accent_color || '#FA4802', color: '#FFFFFF' }}
-                className="px-4 py-1.5 rounded-xl text-white text-xs font-black shadow-md transition active:scale-95 cursor-pointer hover:brightness-110"
+                style={{
+                  backgroundColor: 'var(--theme-accent)',
+                  color: 'var(--theme-accent-text)'
+                }}
+                className="px-4 py-1.5 rounded-xl text-xs font-black shadow-md transition active:scale-95 cursor-pointer hover:brightness-110"
               >
                 Entrar
               </button>
@@ -299,7 +328,8 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Mobile Hamburger toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white"
+              style={{ backgroundColor: 'var(--theme-header-input-bg)', color: 'var(--theme-header-text)' }}
+              className="lg:hidden p-2 rounded-xl border border-white/15"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -315,13 +345,20 @@ export const Header: React.FC<HeaderProps> = ({
               onChange={e => onSearchChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Buscar em Canaã dos Carajás..."
-              className="w-full pl-9 pr-20 py-2 bg-slate-850 border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#0047F7]"
+              style={{
+                backgroundColor: 'var(--theme-header-input-bg)',
+                color: 'var(--theme-header-text)'
+              }}
+              className="w-full pl-9 pr-20 py-2 border border-white/15 rounded-xl text-xs placeholder:opacity-55 focus:outline-none focus:border-[var(--theme-primary)]"
             />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 opacity-60 absolute left-3 top-2.5" />
             <button
               onClick={onSearchSubmit}
-              style={{ backgroundColor: settings.accent_color || '#FA4802', color: '#FFFFFF' }}
-              className="absolute right-1 top-1 px-3 py-1 text-white rounded-lg text-xs font-black cursor-pointer shadow-xs hover:brightness-110"
+              style={{
+                backgroundColor: 'var(--theme-accent)',
+                color: 'var(--theme-accent-text)'
+              }}
+              className="absolute right-1 top-1 px-3 py-1 rounded-lg text-xs font-black cursor-pointer shadow-xs hover:brightness-110"
             >
               Ir
             </button>

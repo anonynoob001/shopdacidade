@@ -53,20 +53,26 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ initialCategory, onN
       <div>
         <button
           onClick={() => onNavigate('home')}
-          className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 mb-2 cursor-pointer"
+          className="text-xs font-semibold text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] flex items-center gap-1 mb-2 cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Voltar para o início
         </button>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--theme-text-primary)] tracking-tight">
           Catálogo Geral de Produtos
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+        <p className="text-xs sm:text-sm text-[var(--theme-text-secondary)] mt-1">
           Pesquise itens disponíveis nas lojas de Canaã dos Carajás com entrega rápida no seu endereço.
         </p>
       </div>
 
       {/* Filters */}
-      <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+      <div
+        style={{
+          backgroundColor: 'var(--theme-card-bg)',
+          borderColor: 'var(--theme-card-border)'
+        }}
+        className="p-4 rounded-2xl border shadow-xs space-y-3"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Search */}
           <div className="relative">
@@ -75,9 +81,14 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ initialCategory, onN
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar por nome ou código..."
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+              style={{
+                backgroundColor: 'var(--theme-page-bg)',
+                borderColor: 'var(--theme-card-border)',
+                color: 'var(--theme-text-primary)'
+              }}
+              className="w-full pl-9 pr-3 py-2 border rounded-xl text-xs focus:outline-none focus:border-[var(--theme-primary)]"
             />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-[var(--theme-text-secondary)] absolute left-3 top-2.5" />
           </div>
 
           {/* Category */}
@@ -85,7 +96,12 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ initialCategory, onN
             <select
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer"
+              style={{
+                backgroundColor: 'var(--theme-page-bg)',
+                borderColor: 'var(--theme-card-border)',
+                color: 'var(--theme-text-primary)'
+              }}
+              className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:border-[var(--theme-primary)] cursor-pointer"
             >
               <option value="">Todas as categorias</option>
               {categories.map(c => (
@@ -99,7 +115,12 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ initialCategory, onN
             <select
               value={sort}
               onChange={e => setSort(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer"
+              style={{
+                backgroundColor: 'var(--theme-page-bg)',
+                borderColor: 'var(--theme-card-border)',
+                color: 'var(--theme-text-primary)'
+              }}
+              className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:border-[var(--theme-primary)] cursor-pointer"
             >
               <option value="recent">Mais recentes e destaques</option>
               <option value="price_asc">Menor preço primeiro</option>
@@ -115,14 +136,24 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ initialCategory, onN
               placeholder="Min R$"
               value={minPrice}
               onChange={e => setMinPrice(e.target.value)}
-              className="w-1/2 px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+              style={{
+                backgroundColor: 'var(--theme-page-bg)',
+                borderColor: 'var(--theme-card-border)',
+                color: 'var(--theme-text-primary)'
+              }}
+              className="w-1/2 px-2.5 py-2 border rounded-xl text-xs focus:outline-none focus:border-[var(--theme-primary)]"
             />
             <input
               type="number"
               placeholder="Max R$"
               value={maxPrice}
               onChange={e => setMaxPrice(e.target.value)}
-              className="w-1/2 px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+              style={{
+                backgroundColor: 'var(--theme-page-bg)',
+                borderColor: 'var(--theme-card-border)',
+                color: 'var(--theme-text-primary)'
+              }}
+              className="w-1/2 px-2.5 py-2 border rounded-xl text-xs focus:outline-none focus:border-[var(--theme-primary)]"
             />
           </div>
         </div>
@@ -130,14 +161,23 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ initialCategory, onN
 
       {/* Product List */}
       {isLoading ? (
-        <div className="py-20 flex justify-center text-slate-400">
-          <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <div className="py-20 flex justify-center text-[var(--theme-text-secondary)]">
+          <div
+            style={{ borderColor: 'var(--theme-primary)', borderTopColor: 'transparent' }}
+            className="w-8 h-8 border-3 rounded-full animate-spin"
+          />
         </div>
       ) : products.length === 0 ? (
-        <div className="py-16 text-center rounded-2xl bg-white border border-slate-200 p-8">
-          <ShoppingBag className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-slate-800">Nenhum produto encontrado com os filtros aplicados</h3>
-          <p className="text-xs text-slate-500 mt-1">Experimente alterar os termos de busca ou a faixa de preço.</p>
+        <div
+          style={{
+            backgroundColor: 'var(--theme-card-bg)',
+            borderColor: 'var(--theme-card-border)'
+          }}
+          className="py-16 text-center rounded-2xl border p-8"
+        >
+          <ShoppingBag className="w-10 h-10 text-[var(--theme-text-secondary)] opacity-40 mx-auto mb-2" />
+          <h3 className="text-sm font-bold text-[var(--theme-text-primary)]">Nenhum produto encontrado com os filtros aplicados</h3>
+          <p className="text-xs text-[var(--theme-text-secondary)] mt-1">Experimente alterar os termos de busca ou a faixa de preço.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -146,7 +186,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ initialCategory, onN
             return (
               <div
                 key={product.id}
-                className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between"
+                style={{
+                  backgroundColor: 'var(--theme-card-bg)',
+                  borderColor: 'var(--theme-card-border)'
+                }}
+                className="rounded-2xl border overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between"
               >
                 <div className="relative aspect-square bg-slate-50 overflow-hidden">
                   <img
@@ -155,12 +199,21 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ initialCategory, onN
                     className="w-full h-full object-cover hover:scale-105 transition duration-500"
                   />
                   {hasPromo && (
-                    <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider shadow">
+                    <span
+                      style={{
+                        backgroundColor: 'var(--theme-accent)',
+                        color: 'var(--theme-accent-text)'
+                      }}
+                      className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider shadow"
+                    >
                       Oferta
                     </span>
                   )}
                   {product.stock_quantity <= 0 && (
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center text-white text-xs font-bold">
+                    <div
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--theme-hero-bg) 70%, transparent)' }}
+                      className="absolute inset-0 backdrop-blur-xs flex items-center justify-center text-white text-xs font-bold"
+                    >
                       Esgotado
                     </div>
                   )}
@@ -170,11 +223,12 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ initialCategory, onN
                   <div>
                     <button
                       onClick={() => onNavigate('store-detail', product.store_slug)}
-                      className="text-[10px] font-semibold text-emerald-700 hover:underline uppercase tracking-wider block text-left"
+                      style={{ color: 'var(--theme-primary)' }}
+                      className="text-[10px] font-semibold hover:underline uppercase tracking-wider block text-left cursor-pointer"
                     >
                       {product.store_name}
                     </button>
-                    <h3 className="font-bold text-xs sm:text-sm text-slate-900 line-clamp-2 mt-0.5 leading-snug">
+                    <h3 className="font-bold text-xs sm:text-sm text-[var(--theme-text-primary)] line-clamp-2 mt-0.5 leading-snug">
                       {product.name}
                     </h3>
                   </div>
@@ -183,15 +237,15 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ initialCategory, onN
                     <div>
                       {hasPromo ? (
                         <div className="flex items-baseline gap-1.5">
-                          <span className="text-base sm:text-lg font-black text-emerald-700">
+                          <span style={{ color: 'var(--theme-accent)' }} className="text-base sm:text-lg font-black">
                             {formatBRL(product.promotional_price)}
                           </span>
-                          <span className="text-xs text-slate-400 line-through">
+                          <span className="text-xs text-[var(--theme-text-secondary)] opacity-70 line-through">
                             {formatBRL(product.price)}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-base sm:text-lg font-black text-slate-900">
+                        <span style={{ color: 'var(--theme-text-primary)' }} className="text-base sm:text-lg font-black">
                           {formatBRL(product.price)}
                         </span>
                       )}
@@ -200,7 +254,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ initialCategory, onN
                     <button
                       onClick={() => addItem(product, 1)}
                       disabled={product.stock_quantity <= 0}
-                      className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+                      style={{
+                        backgroundColor: 'var(--theme-primary)',
+                        color: 'var(--theme-primary-text)'
+                      }}
+                      className="w-full py-2 rounded-xl hover:brightness-110 disabled:opacity-45 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
                     >
                       <Plus className="w-4 h-4" />
                       Adicionar

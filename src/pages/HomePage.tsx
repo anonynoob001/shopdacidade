@@ -179,8 +179,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
 
   if (isLoading || !data) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-slate-500">
-        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-[var(--theme-text-secondary)]">
+        <div
+          style={{ borderColor: 'var(--theme-primary)', borderTopColor: 'transparent' }}
+          className="w-10 h-10 border-4 rounded-full animate-spin mb-4"
+        />
         <p className="text-sm font-medium">Carregando o melhor de Canaã dos Carajás...</p>
       </div>
     );
@@ -192,32 +195,50 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
     <div className="space-y-12 pb-16">
       {/* 1. Hero Banner Carousel / Promo */}
       {currentBanner && (
-        <section className="relative overflow-hidden bg-gradient-to-br from-[#071536] via-[#091f5a] to-[#0047F7] border-b border-blue-900/40 text-white">
+        <section
+          style={{
+            background: 'linear-gradient(135deg, var(--theme-hero-bg), var(--theme-hero-bg-end))',
+            color: 'var(--theme-hero-text)'
+          }}
+          className="relative overflow-hidden border-b border-white/10 transition-colors"
+        >
           <div className="max-w-7xl mx-auto px-4 py-12 md:py-16 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div className="space-y-5 z-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FA4802]/20 border border-[#FA4802]/40 text-[#FA4802] text-xs font-black tracking-wide">
+              <div
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--theme-accent) 20%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--theme-accent) 45%, transparent)',
+                  color: 'var(--theme-accent)'
+                }}
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-black tracking-wide"
+              >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Marketplace Regional • Canaã dos Carajás, PA</span>
               </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+              <h1 style={{ color: 'var(--theme-hero-text)' }} className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
                 {currentBanner.title}
               </h1>
-              <p className="text-sm sm:text-base text-slate-200 leading-relaxed max-w-xl font-normal">
+              <p style={{ color: 'var(--theme-hero-text)' }} className="text-sm sm:text-base opacity-85 leading-relaxed max-w-xl font-normal">
                 {currentBanner.subtitle || 'Tudo o que você precisa no comércio de Canaã dos Carajás: materiais, alimentos, peças e profissionais de confiança com agendamento online.'}
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <button
                   onClick={() => onNavigate('stores')}
-                  className="px-6 py-3.5 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] text-white font-black text-sm shadow-xl shadow-orange-950/40 flex items-center gap-2 transition active:scale-95 cursor-pointer"
+                  style={{
+                    backgroundColor: 'var(--theme-accent)',
+                    color: 'var(--theme-accent-text)'
+                  }}
+                  className="px-6 py-3.5 rounded-xl font-black text-sm shadow-xl flex items-center gap-2 transition hover:brightness-110 active:scale-95 cursor-pointer"
                 >
                   <StoreIcon className="w-4 h-4" />
                   Ver Lojas em Canaã
                 </button>
                 <button
                   onClick={() => onNavigate('services')}
-                  className="px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-sm flex items-center gap-2 transition cursor-pointer"
+                  style={{ color: 'var(--theme-hero-text)' }}
+                  className="px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 font-bold text-sm flex items-center gap-2 transition cursor-pointer"
                 >
-                  <Wrench className="w-4 h-4 text-[#FA4802]" />
+                  <Wrench style={{ color: 'var(--theme-accent)' }} className="w-4 h-4" />
                   Contratar Serviços
                 </button>
               </div>
@@ -230,9 +251,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
                   alt={currentBanner.title}
                   className="w-full h-full object-cover transition duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#071536]/90 via-transparent to-transparent flex items-end p-6">
+                <div
+                  style={{
+                    background: 'linear-gradient(to top, color-mix(in srgb, var(--theme-hero-bg) 92%, transparent), transparent)'
+                  }}
+                  className="absolute inset-0 flex items-end p-6"
+                >
                   <div className="text-white text-xs">
-                    <span className="font-extrabold text-[#FA4802] block text-sm">Entrega rápida em Canaã dos Carajás</span>
+                    <span style={{ color: 'var(--theme-accent)' }} className="font-extrabold block text-sm">
+                      Entrega rápida em Canaã dos Carajás
+                    </span>
                     <p className="text-slate-200">Receba no Centro, Novo Horizonte, Alto Bonito e demais bairros.</p>
                   </div>
                 </div>
@@ -245,8 +273,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
                     <button
                       key={idx}
                       onClick={() => setActiveBannerIndex(idx)}
+                      style={idx === activeBannerIndex ? { backgroundColor: 'var(--theme-accent)' } : undefined}
                       className={`h-2 rounded-full transition-all cursor-pointer ${
-                        idx === activeBannerIndex ? 'w-7 bg-[#FA4802]' : 'w-2 bg-white/30 hover:bg-white/50'
+                        idx === activeBannerIndex ? 'w-7' : 'w-2 bg-white/30 hover:bg-white/50'
                       }`}
                       aria-label={`Banner ${idx + 1}`}
                     />
@@ -261,12 +290,19 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
       {/* Neighborhood notice if selected */}
       {selectedNeighborhood && (
         <div className="max-w-7xl mx-auto px-4">
-          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs text-emerald-300">
+          <div
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--theme-badge-open) 12%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--theme-badge-open) 35%, transparent)',
+              color: 'var(--theme-text-primary)'
+            }}
+            className="p-3.5 rounded-xl border flex items-center justify-between text-xs"
+          >
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-emerald-400" />
+              <MapPin style={{ color: 'var(--theme-badge-open)' }} className="w-4 h-4" />
               <span>Você está navegando com foco nas lojas e prestadores que atendem o bairro <strong>{selectedNeighborhood}</strong> em Canaã dos Carajás.</span>
             </div>
-            <button onClick={() => onNavigate('stores')} className="font-bold underline hover:text-emerald-200">
+            <button onClick={() => onNavigate('stores')} className="font-bold underline hover:opacity-80 cursor-pointer">
               Ver todos os bairros
             </button>
           </div>
@@ -275,19 +311,32 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
 
       {/* 2. Categorias do Shop da Cidade */}
       <section className="max-w-7xl mx-auto px-4">
-        <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+        <div
+          style={{
+            backgroundColor: 'var(--theme-card-bg)',
+            borderColor: 'var(--theme-card-border)'
+          }}
+          className="p-5 sm:p-6 rounded-3xl border shadow-xs space-y-4 transition-colors"
+        >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#0047F7] animate-pulse" />
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                <span style={{ backgroundColor: 'var(--theme-primary)' }} className="w-2.5 h-2.5 rounded-full animate-pulse" />
+                <h2 style={{ color: 'var(--theme-text-primary)' }} className="text-xl sm:text-2xl font-black tracking-tight">
                   Categorias
                 </h2>
-                <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0047F7] text-[10px] font-black uppercase tracking-wide border border-blue-100">
+                <span
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--theme-primary) 12%, transparent)',
+                    color: 'var(--theme-primary)',
+                    borderColor: 'color-mix(in srgb, var(--theme-primary) 25%, transparent)'
+                  }}
+                  className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide border"
+                >
                   Segmentos
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              <p style={{ color: 'var(--theme-text-secondary)' }} className="text-xs sm:text-sm mt-0.5">
                 Explore os estabelecimentos e produtos de Canaã dos Carajás por segmento:
               </p>
             </div>
@@ -303,9 +352,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
               )}
               <button
                 onClick={() => onNavigate('stores', selectedCategory || undefined)}
-                className="text-xs sm:text-sm font-bold text-[#0047F7] hover:text-blue-800 flex items-center gap-1 cursor-pointer"
+                style={{ color: 'var(--theme-primary)' }}
+                className="text-xs sm:text-sm font-bold hover:opacity-80 flex items-center gap-1 cursor-pointer"
               >
-                Ver diretório de lojas <ArrowRight className="w-4 h-4 text-[#FA4802]" />
+                Ver diretório de lojas <ArrowRight style={{ color: 'var(--theme-accent)' }} className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -324,15 +374,22 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-2.5">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              <h2 style={{ color: 'var(--theme-text-primary)' }} className="text-xl sm:text-2xl font-black tracking-tight">
                 {selectedCategory ? `Lojas Ativas em ${selectedCategory}` : 'Lojas Parceiras em Canaã'}
               </h2>
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[#0047F7] text-xs font-black flex items-center gap-1.5 shadow-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0047F7] animate-ping" />
+              <span
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--theme-primary) 12%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--theme-primary) 30%, transparent)',
+                  color: 'var(--theme-primary)'
+                }}
+                className="px-2.5 py-0.5 rounded-full border text-xs font-black flex items-center gap-1.5 shadow-xs"
+              >
+                <span style={{ backgroundColor: 'var(--theme-primary)' }} className="w-1.5 h-1.5 rounded-full animate-ping" />
                 {displayedStores.length} {displayedStores.length === 1 ? 'loja ativa' : 'lojas ativas'}
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p style={{ color: 'var(--theme-text-secondary)' }} className="text-xs sm:text-sm mt-1">
               {selectedCategory
                 ? `Exibindo os comércios locais ativos e prontos para atender pedidos em Canaã dos Carajás na categoria "${selectedCategory}".`
                 : 'Compre direto de estabelecimentos comerciais locais com entrega ou retirada no balcão.'}
@@ -343,7 +400,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
             {selectedCategory && (
               <button
                 onClick={() => handleSelectCategoryBubble(null)}
-                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--theme-card-bg)',
+                  borderColor: 'var(--theme-card-border)',
+                  color: 'var(--theme-text-primary)'
+                }}
+                className="px-3.5 py-2 rounded-xl border hover:brightness-95 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
                 Mostrar todas as lojas
@@ -351,7 +413,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
             )}
             <button
               onClick={() => onNavigate('stores', selectedCategory || undefined)}
-              className="text-xs sm:text-sm font-semibold text-[#0047F7] hover:text-[#0038c7] flex items-center gap-1 cursor-pointer"
+              style={{ color: 'var(--theme-primary)' }}
+              className="text-xs sm:text-sm font-semibold hover:opacity-80 flex items-center gap-1 cursor-pointer"
             >
               Ver todas <ArrowRight className="w-4 h-4" />
             </button>
@@ -360,75 +423,62 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
 
         {/* Quick Filter Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar">
-          <button
-            onClick={() => setQuickFilter('all')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition shrink-0 cursor-pointer ${
-              quickFilter === 'all'
-                ? 'bg-[#0047F7] text-white shadow-md shadow-blue-500/20'
-                : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            Todas as Lojas ({allStores.length})
-          </button>
-
-          <button
-            onClick={() => setQuickFilter('open')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition shrink-0 flex items-center gap-1.5 cursor-pointer ${
-              quickFilter === 'open'
-                ? 'bg-[#0047F7] text-white shadow-md shadow-blue-500/20'
-                : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Aberto Agora</span>
-          </button>
-
-          <button
-            onClick={() => setQuickFilter('free_shipping')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition shrink-0 flex items-center gap-1.5 cursor-pointer ${
-              quickFilter === 'free_shipping'
-                ? 'bg-[#0047F7] text-white shadow-md shadow-blue-500/20'
-                : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            <Truck className="w-3.5 h-3.5 text-[#FA4802]" />
-            <span>Frete Grátis</span>
-          </button>
-
-          <button
-            onClick={() => setQuickFilter('fast_delivery')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition shrink-0 flex items-center gap-1.5 cursor-pointer ${
-              quickFilter === 'fast_delivery'
-                ? 'bg-[#0047F7] text-white shadow-md shadow-blue-500/20'
-                : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            <Zap className="w-3.5 h-3.5 text-amber-500" />
-            <span>Entrega Rápida</span>
-          </button>
-
-          <button
-            onClick={() => setQuickFilter('featured')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition shrink-0 flex items-center gap-1.5 cursor-pointer ${
-              quickFilter === 'featured'
-                ? 'bg-[#0047F7] text-white shadow-md shadow-blue-500/20'
-                : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#FA4802]" />
-            <span>Lojas Oficiais</span>
-          </button>
+          {[
+            { id: 'all', label: `Todas as Lojas (${allStores.length})`, icon: null },
+            { id: 'open', label: 'Aberto Agora', icon: 'open' },
+            { id: 'free_shipping', label: 'Frete Grátis', icon: 'truck' },
+            { id: 'fast_delivery', label: 'Entrega Rápida', icon: 'zap' },
+            { id: 'featured', label: 'Lojas Oficiais', icon: 'sparkles' }
+          ].map(pill => {
+            const active = quickFilter === pill.id;
+            return (
+              <button
+                key={pill.id}
+                onClick={() => setQuickFilter(pill.id as any)}
+                style={
+                  active
+                    ? {
+                        backgroundColor: 'var(--theme-primary)',
+                        color: 'var(--theme-primary-text)',
+                        borderColor: 'var(--theme-primary)'
+                      }
+                    : {
+                        backgroundColor: 'var(--theme-card-bg)',
+                        color: 'var(--theme-text-primary)',
+                        borderColor: 'var(--theme-card-border)'
+                      }
+                }
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition shrink-0 flex items-center gap-1.5 cursor-pointer border ${
+                  active ? 'shadow-md' : 'hover:border-[var(--theme-primary)]'
+                }`}
+              >
+                {pill.icon === 'open' && (
+                  <span style={{ backgroundColor: 'var(--theme-badge-open)' }} className="w-2 h-2 rounded-full animate-pulse" />
+                )}
+                {pill.icon === 'truck' && <Truck style={{ color: active ? 'var(--theme-primary-text)' : 'var(--theme-accent)' }} className="w-3.5 h-3.5" />}
+                {pill.icon === 'zap' && <Zap className="w-3.5 h-3.5 text-amber-500" />}
+                {pill.icon === 'sparkles' && <Sparkles style={{ color: active ? 'var(--theme-primary-text)' : 'var(--theme-accent)' }} className="w-3.5 h-3.5" />}
+                <span>{pill.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {displayedStores.length === 0 ? (
-          <div className="py-14 text-center rounded-3xl bg-white border border-slate-200 p-8 shadow-xs">
+          <div
+            style={{
+              backgroundColor: 'var(--theme-card-bg)',
+              borderColor: 'var(--theme-card-border)'
+            }}
+            className="py-14 text-center rounded-3xl border p-8 shadow-xs"
+          >
             <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3">
               <StoreIcon className="w-8 h-8" />
             </div>
-            <h3 className="text-base font-bold text-slate-800">
+            <h3 style={{ color: 'var(--theme-text-primary)' }} className="text-base font-bold">
               Nenhuma loja ativa encontrada {selectedCategory ? `em "${selectedCategory}"` : ''}
             </h3>
-            <p className="text-xs text-slate-500 mt-1.5 max-w-md mx-auto">
+            <p style={{ color: 'var(--theme-text-secondary)' }} className="text-xs mt-1.5 max-w-md mx-auto">
               {selectedNeighborhood
                 ? `Não encontramos lojas ativas atendendo o bairro "${selectedNeighborhood}" nesta categoria no momento.`
                 : 'Estamos cadastrando novos parceiros comerciais locais nesta categoria em Canaã dos Carajás.'}
@@ -436,13 +486,22 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
             <div className="mt-5 flex items-center justify-center gap-3">
               <button
                 onClick={() => setSelectedCategory('')}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition"
+                style={{
+                  backgroundColor: 'var(--theme-primary)',
+                  color: 'var(--theme-primary-text)'
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition hover:brightness-110"
               >
                 Ver todas as lojas
               </button>
               <button
                 onClick={() => onNavigate('partner-register')}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition"
+                style={{
+                  backgroundColor: 'var(--theme-page-bg)',
+                  color: 'var(--theme-text-primary)',
+                  borderColor: 'var(--theme-card-border)'
+                }}
+                className="px-4 py-2 rounded-xl border text-xs font-bold cursor-pointer transition hover:brightness-95"
               >
                 Cadastrar minha loja
               </button>
@@ -453,7 +512,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
             {displayedStores.map(store => (
               <div
                 key={store.id}
-                className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-lg transition duration-200 flex flex-col justify-between group"
+                style={{
+                  backgroundColor: 'var(--theme-card-bg)',
+                  borderColor: 'var(--theme-card-border)'
+                }}
+                className="rounded-2xl border overflow-hidden shadow-xs hover:shadow-lg transition duration-200 flex flex-col justify-between group"
               >
                 <div className="relative h-38 bg-slate-100 overflow-hidden">
                   <img
@@ -461,12 +524,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
                     alt={store.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                   />
-                  <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-emerald-600/90 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1.5 shadow-xs">
+                  <div
+                    style={{ backgroundColor: 'var(--theme-badge-open)' }}
+                    className="absolute top-3 left-3 px-2.5 py-1 rounded-full backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1.5 shadow-xs"
+                  >
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                     <span>Loja Ativa</span>
                   </div>
                   <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1 shadow-xs">
-                    <Clock className="w-3 h-3 text-emerald-400" />
+                    <Clock style={{ color: 'var(--theme-badge-open)' }} className="w-3 h-3" />
                     <span>{store.delivery_time_min || '30-50 min'}</span>
                   </div>
                 </div>
@@ -480,33 +546,46 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
                         className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow -mt-8 shrink-0 bg-white"
                       />
                       <div className="flex-1">
-                        <span className="text-[10px] font-bold text-[#0047F7] uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded-md inline-block">
+                        <span
+                          style={{
+                            color: 'var(--theme-primary)',
+                            backgroundColor: 'color-mix(in srgb, var(--theme-primary) 12%, transparent)'
+                          }}
+                          className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md inline-block"
+                        >
                           {store.category}
                         </span>
-                        <h3 className="font-bold text-base text-slate-900 group-hover:text-[#0047F7] transition leading-snug mt-1">
+                        <h3 style={{ color: 'var(--theme-text-primary)' }} className="font-bold text-base group-hover:text-[var(--theme-primary)] transition leading-snug mt-1">
                           {store.name}
                         </h3>
                       </div>
                     </div>
 
-                    <p className="mt-2 text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                    <p style={{ color: 'var(--theme-text-secondary)' }} className="mt-2 text-xs line-clamp-2 leading-relaxed">
                       {store.description}
                     </p>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                    <div className="flex items-center gap-1 text-slate-600">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  <div
+                    style={{ borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-secondary)' }}
+                    className="pt-3 border-t flex items-center justify-between text-xs"
+                  >
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 opacity-70" />
                       <span>Bairro {store.neighborhood}</span>
                     </div>
-                    <div className="font-semibold text-slate-700">
+                    <div style={{ color: 'var(--theme-text-primary)' }} className="font-semibold">
                       Taxa: {store.delivery_fee_base > 0 ? formatBRL(store.delivery_fee_base) : 'Grátis'}
                     </div>
                   </div>
 
                   <button
                     onClick={() => onNavigate('store-detail', store.slug)}
-                    className="w-full py-2.5 rounded-xl bg-[#0047F7] hover:bg-[#0038c7] text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-500/20 active:scale-98"
+                    style={{
+                      backgroundColor: 'var(--theme-primary)',
+                      color: 'var(--theme-primary-text)'
+                    }}
+                    className="w-full py-2.5 rounded-xl hover:brightness-110 text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-98"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     Ver Loja e Produtos
@@ -519,11 +598,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
       </section>
 
       {/* 4. Serviços Profissionais de Canaã dos Carajás */}
-      <section className="bg-[#071536] py-12 text-white border-y border-[#0047F7]/20">
+      <section
+        style={{
+          backgroundColor: 'var(--theme-dark-section-bg)',
+          borderColor: 'color-mix(in srgb, var(--theme-primary) 25%, transparent)'
+        }}
+        className="py-12 text-white border-y transition-colors"
+      >
         <div className="max-w-7xl mx-auto px-4 space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FA4802]/20 text-[#FA4802] text-xs font-bold mb-2">
+              <div
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--theme-accent) 20%, transparent)',
+                  color: 'var(--theme-accent)'
+                }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold mb-2"
+              >
                 <Wrench className="w-3.5 h-3.5" />
                 <span>Mão de Obra & Assistência Técnica</span>
               </div>
@@ -536,7 +627,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
             </div>
             <button
               onClick={() => onNavigate('services')}
-              className="px-4 py-2 rounded-xl bg-[#0047F7] hover:bg-[#0038c7] text-white text-xs font-bold flex items-center gap-1.5 transition self-start md:self-auto cursor-pointer shadow-md shadow-blue-500/20"
+              style={{
+                backgroundColor: 'var(--theme-primary)',
+                color: 'var(--theme-primary-text)'
+              }}
+              className="px-4 py-2 rounded-xl hover:brightness-110 text-xs font-bold flex items-center gap-1.5 transition self-start md:self-auto cursor-pointer shadow-md"
             >
               Ver todos os prestadores <ArrowRight className="w-4 h-4" />
             </button>
@@ -546,14 +641,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
             {data.featuredProviders.map(prov => (
               <div
                 key={prov.id}
-                className="bg-[#0b1c44] rounded-2xl border border-slate-700/80 p-5 flex flex-col justify-between hover:border-[#0047F7] transition space-y-4"
+                style={{ backgroundColor: 'var(--theme-dark-card-bg)' }}
+                className="rounded-2xl border border-white/10 p-5 flex flex-col justify-between hover:border-[var(--theme-primary)] transition space-y-4"
               >
                 <div>
                   <div className="flex items-start gap-3">
                     <img
                       src={prov.photo_url || 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=120&h=120&fit=crop&q=80'}
                       alt={prov.business_name}
-                      className="w-14 h-14 rounded-2xl object-cover border-2 border-[#0047F7]/40 shrink-0"
+                      style={{ borderColor: 'color-mix(in srgb, var(--theme-primary) 45%, transparent)' }}
+                      className="w-14 h-14 rounded-2xl object-cover border-2 shrink-0"
                     />
                     <div>
                       <div className="flex items-center gap-1">
@@ -566,7 +663,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
                       <h3 className="font-bold text-base text-white mt-0.5 leading-snug">
                         {prov.business_name}
                       </h3>
-                      <p className="text-xs text-[#FA4802] font-semibold">{prov.category_name}</p>
+                      <p style={{ color: 'var(--theme-accent)' }} className="text-xs font-semibold">{prov.category_name}</p>
                     </div>
                   </div>
 
@@ -575,7 +672,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-slate-700/70 flex items-center justify-between">
+                <div className="pt-3 border-t border-white/10 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Serviços a partir de</span>
                     <span className="text-sm font-bold text-white">
@@ -584,7 +681,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
                   </div>
                   <button
                     onClick={() => onNavigate('provider-detail', prov.slug)}
-                    className="px-3 py-2 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-orange-950/30"
+                    style={{
+                      backgroundColor: 'var(--theme-accent)',
+                      color: 'var(--theme-accent-text)'
+                    }}
+                    className="px-3 py-2 rounded-xl hover:brightness-110 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
                     Pedir Orçamento
@@ -599,10 +700,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
       {/* 6. Empresas Patrocinadoras & Apoio Local */}
       {data.localAds && data.localAds.length > 0 && (
         <section className="max-w-7xl mx-auto px-4">
-          <div className="p-6 rounded-2xl bg-gradient-to-r from-[#071536] to-[#0a1b42] text-white border border-[#0047F7]/30">
+          <div
+            style={{
+              backgroundColor: 'var(--theme-dark-section-bg)',
+              borderColor: 'color-mix(in srgb, var(--theme-primary) 30%, transparent)'
+            }}
+            className="p-6 rounded-2xl text-white border transition-colors"
+          >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <span className="text-[10px] font-bold text-[#FA4802] uppercase tracking-widest">Apoio ao Comércio Regional</span>
+                <span style={{ color: 'var(--theme-accent)' }} className="text-[10px] font-bold uppercase tracking-widest">
+                  Apoio ao Comércio Regional
+                </span>
                 <h3 className="text-base font-bold text-white">Empresas Patrocinadoras de Canaã dos Carajás</h3>
               </div>
               <span className="text-[10px] text-slate-400">Espaço Publicitário Local</span>
@@ -610,7 +719,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {data.localAds.map(ad => (
-                <div key={ad.id} className="p-4 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center gap-4">
+                <div
+                  key={ad.id}
+                  style={{ backgroundColor: 'var(--theme-dark-card-bg)' }}
+                  className="p-4 rounded-xl border border-white/10 flex items-center gap-4"
+                >
                   <img
                     src={ad.image_url}
                     alt={ad.title}
@@ -630,37 +743,73 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, selectedNeighbor
       {/* 7. Call To Action para Parceiros Locais */}
       <section className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-50/90 via-white to-blue-50/40 border border-blue-200/80 flex flex-col justify-between space-y-6 shadow-sm">
+          <div
+            style={{
+              backgroundColor: 'var(--theme-card-bg)',
+              borderColor: 'color-mix(in srgb, var(--theme-primary) 30%, var(--theme-card-border))'
+            }}
+            className="p-8 rounded-3xl border flex flex-col justify-between space-y-6 shadow-sm transition-colors"
+          >
             <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#0047F7] text-white flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <div
+                style={{
+                  backgroundColor: 'var(--theme-primary)',
+                  color: 'var(--theme-primary-text)'
+                }}
+                className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"
+              >
                 <StoreIcon className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900">Você tem um comércio em Canaã dos Carajás?</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <h3 style={{ color: 'var(--theme-text-primary)' }} className="text-xl font-bold">
+                Você tem um comércio em Canaã dos Carajás?
+              </h3>
+              <p style={{ color: 'var(--theme-text-secondary)' }} className="text-xs sm:text-sm leading-relaxed">
                 Cadastre sua loja no Shop da Cidade. Tenha catálogo online, receba pedidos com entrega própria ou por entregadores parceiros, e aumente seu faturamento.
               </p>
             </div>
             <button
               onClick={() => onNavigate('partner-register')}
-              className="py-3 px-5 rounded-xl bg-[#0047F7] hover:bg-[#0038c7] text-white font-black text-xs sm:text-sm self-start transition cursor-pointer shadow-md shadow-blue-500/20"
+              style={{
+                backgroundColor: 'var(--theme-primary)',
+                color: 'var(--theme-primary-text)'
+              }}
+              className="py-3 px-5 rounded-xl hover:brightness-110 font-black text-xs sm:text-sm self-start transition cursor-pointer shadow-md"
             >
               Cadastrar Minha Loja Gratuitamente
             </button>
           </div>
 
-          <div className="p-8 rounded-3xl bg-gradient-to-br from-orange-50/90 via-white to-orange-50/40 border border-orange-200/80 flex flex-col justify-between space-y-6 shadow-sm">
+          <div
+            style={{
+              backgroundColor: 'var(--theme-card-bg)',
+              borderColor: 'color-mix(in srgb, var(--theme-accent) 30%, var(--theme-card-border))'
+            }}
+            className="p-8 rounded-3xl border flex flex-col justify-between space-y-6 shadow-sm transition-colors"
+          >
             <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#FA4802] text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
+              <div
+                style={{
+                  backgroundColor: 'var(--theme-accent)',
+                  color: 'var(--theme-accent-text)'
+                }}
+                className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"
+              >
                 <Wrench className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900">Oferece serviços profissionais?</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <h3 style={{ color: 'var(--theme-text-primary)' }} className="text-xl font-bold">
+                Oferece serviços profissionais?
+              </h3>
+              <p style={{ color: 'var(--theme-text-secondary)' }} className="text-xs sm:text-sm leading-relaxed">
                 Eletricistas, pedreiros, mecânicos, diaristas e técnicos. Crie seu perfil verificado e receba solicitações de orçamento de moradores de toda a cidade.
               </p>
             </div>
             <button
               onClick={() => onNavigate('partner-register')}
-              className="py-3 px-5 rounded-xl bg-[#FA4802] hover:bg-[#e03f00] text-white font-black text-xs sm:text-sm self-start transition cursor-pointer shadow-md shadow-orange-500/20"
+              style={{
+                backgroundColor: 'var(--theme-accent)',
+                color: 'var(--theme-accent-text)'
+              }}
+              className="py-3 px-5 rounded-xl hover:brightness-110 font-black text-xs sm:text-sm self-start transition cursor-pointer shadow-md"
             >
               Anunciar Meus Serviços
             </button>

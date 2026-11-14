@@ -1,32 +1,79 @@
 @import "tailwindcss";
 
 :root {
+  /* Core brand defaults */
   --color-theme-primary: #0047F7;
   --color-theme-secondary: #071536;
   --color-theme-accent: #FA4802;
+
+  /* Granular full-site editable tokens */
+  --theme-notice-bg: #0047F7;
+  --theme-notice-text: #FFFFFF;
+
+  --theme-topbar-bg: #050E24;
+  --theme-header-bg: #071536;
+  --theme-header-text: #F8FAFC;
+  --theme-header-input-bg: #0F172A;
+
+  --theme-footer-bg: #071536;
+  --theme-footer-text: #94A3B8;
+
+  --theme-page-bg: #F8FAFC;
+  --theme-card-bg: #FFFFFF;
+  --theme-card-border: #E2E8F0;
+  --theme-text-primary: #0F172A;
+  --theme-text-secondary: #64748B;
+
+  --theme-primary: #0047F7;
+  --theme-primary-text: #FFFFFF;
+  --theme-accent: #FA4802;
+  --theme-accent-text: #FFFFFF;
+
+  --theme-hero-bg: #071536;
+  --theme-hero-bg-end: #0047F7;
+  --theme-hero-text: #FFFFFF;
+
+  --theme-dark-section-bg: #071536;
+  --theme-dark-card-bg: #0B1C44;
+
+  --theme-bottom-nav-bg: #FFFFFF;
+  --theme-badge-open: #059669;
 }
 
 /* Dynamic theme classes for platform-wide consistency */
 .theme-primary-bg {
-  background-color: var(--color-theme-primary) !important;
+  background-color: var(--theme-primary) !important;
+  color: var(--theme-primary-text) !important;
 }
 
 .theme-primary-text {
-  color: var(--color-theme-primary) !important;
+  color: var(--theme-primary) !important;
 }
 
 .theme-primary-border {
-  border-color: var(--color-theme-primary) !important;
+  border-color: var(--theme-primary) !important;
 }
 
 .theme-accent-bg {
-  background-color: var(--color-theme-accent) !important;
+  background-color: var(--theme-accent) !important;
+  color: var(--theme-accent-text) !important;
 }
 
 .theme-accent-text {
-  color: var(--color-theme-accent) !important;
+  color: var(--theme-accent) !important;
 }
 
 .theme-secondary-bg {
-  background-color: var(--color-theme-secondary) !important;
+  background-color: var(--theme-header-bg) !important;
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

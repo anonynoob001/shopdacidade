@@ -48,7 +48,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useSiteTheme } from '../context/ThemeContext';
+import { DEFAULT_SITE_COLORS, useSiteTheme } from '../context/ThemeContext';
 import { apiRequest, formatBRL, formatDateBR, STORE_CATEGORIES } from '../services/api';
 import { AuditLog, PromotionalBanner, ServiceProvider, Store as StoreType, User } from '../worker/types';
 
@@ -56,55 +56,372 @@ interface AdminDashboardProps {
   onNavigate: (view: string, param?: string) => void;
 }
 
+type SiteColorKey = keyof typeof DEFAULT_SITE_COLORS;
+
 const THEME_PRESETS: Array<{
   name: string;
-  primary: string;
-  secondary: string;
-  accent: string;
-  swatches?: string[];
+  subtitle: string;
+  swatches: string[];
+  colors: Record<SiteColorKey, string>;
 }> = [
   {
     name: 'Shop da Cidade Tech (Azul Cobalto & Laranja)',
-    primary: '#0047F7',
-    secondary: '#071536',
-    accent: '#FA4802'
+    subtitle: 'Identidade moderna de marketplace com azul profundo, azul cobalto e laranja de oferta',
+    swatches: ['#0047F7', '#071536', '#FA4802', '#F8FAFC', '#FFFFFF'],
+    colors: { ...DEFAULT_SITE_COLORS }
   },
   {
     name: 'Verde Neon & Oliva (Sport High-Contrast)',
-    primary: '#A2FA07',
-    secondary: '#0A0A09',
-    accent: '#4F6629',
-    swatches: ['#A2FA07', '#4F6629', '#DFFA7D', '#0A0A09', '#FFFFFF']
+    subtitle: 'Alto contraste esportivo com verde neon, verde oliva, verde claro, preto e branco',
+    swatches: ['#A2FA07', '#4F6629', '#DFFA7D', '#0A0A09', '#FFFFFF'],
+    colors: {
+      notice_bg_color: '#A2FA07',
+      notice_text_color: '#0A0A09',
+      topbar_bg_color: '#050504',
+      secondary_color: '#0A0A09',
+      header_text_color: '#FFFFFF',
+      header_input_bg_color: '#171C10',
+      footer_bg_color: '#0A0A09',
+      footer_text_color: '#DFFA7D',
+      page_bg_color: '#F7FAEF',
+      card_bg_color: '#FFFFFF',
+      card_border_color: '#DFFA7D',
+      text_primary_color: '#0A0A09',
+      text_secondary_color: '#4F6629',
+      primary_color: '#A2FA07',
+      primary_text_color: '#0A0A09',
+      accent_color: '#4F6629',
+      accent_text_color: '#FFFFFF',
+      hero_bg_color: '#0A0A09',
+      hero_bg_end_color: '#4F6629',
+      hero_text_color: '#FFFFFF',
+      dark_section_bg_color: '#0A0A09',
+      dark_card_bg_color: '#171C10',
+      bottom_nav_bg_color: '#FFFFFF',
+      badge_open_color: '#4F6629'
+    }
   },
   {
     name: 'Shop da Cidade Clássico (Ouro & Grafite)',
-    primary: '#fdca04',
-    secondary: '#0f172a',
-    accent: '#f59e0b'
+    subtitle: 'Paleta original ouro vibrante e grafite escuro',
+    swatches: ['#fdca04', '#0f172a', '#f59e0b', '#f8fafc', '#ffffff'],
+    colors: {
+      notice_bg_color: '#fdca04',
+      notice_text_color: '#0f172a',
+      topbar_bg_color: '#020617',
+      secondary_color: '#0f172a',
+      header_text_color: '#f8fafc',
+      header_input_bg_color: '#1e293b',
+      footer_bg_color: '#0f172a',
+      footer_text_color: '#94a3b8',
+      page_bg_color: '#f8fafc',
+      card_bg_color: '#ffffff',
+      card_border_color: '#e2e8f0',
+      text_primary_color: '#0f172a',
+      text_secondary_color: '#64748b',
+      primary_color: '#fdca04',
+      primary_text_color: '#0f172a',
+      accent_color: '#f59e0b',
+      accent_text_color: '#0f172a',
+      hero_bg_color: '#0f172a',
+      hero_bg_end_color: '#334155',
+      hero_text_color: '#ffffff',
+      dark_section_bg_color: '#0f172a',
+      dark_card_bg_color: '#1e293b',
+      bottom_nav_bg_color: '#ffffff',
+      badge_open_color: '#059669'
+    }
+  },
+  {
+    name: 'Branco Clean Minimalista',
+    subtitle: 'Visual claro estilo catálogo clean com cabeçalho branco e destaques azuis',
+    swatches: ['#FFFFFF', '#0047F7', '#0F172A', '#F1F5F9', '#FA4802'],
+    colors: {
+      notice_bg_color: '#0047F7',
+      notice_text_color: '#FFFFFF',
+      topbar_bg_color: '#F1F5F9',
+      secondary_color: '#FFFFFF',
+      header_text_color: '#0F172A',
+      header_input_bg_color: '#F1F5F9',
+      footer_bg_color: '#0F172A',
+      footer_text_color: '#CBD5E1',
+      page_bg_color: '#F8FAFC',
+      card_bg_color: '#FFFFFF',
+      card_border_color: '#E2E8F0',
+      text_primary_color: '#0F172A',
+      text_secondary_color: '#64748B',
+      primary_color: '#0047F7',
+      primary_text_color: '#FFFFFF',
+      accent_color: '#FA4802',
+      accent_text_color: '#FFFFFF',
+      hero_bg_color: '#0F172A',
+      hero_bg_end_color: '#0047F7',
+      hero_text_color: '#FFFFFF',
+      dark_section_bg_color: '#0F172A',
+      dark_card_bg_color: '#1E293B',
+      bottom_nav_bg_color: '#FFFFFF',
+      badge_open_color: '#059669'
+    }
   },
   {
     name: 'Verde Esmeralda Carajás',
-    primary: '#059669',
-    secondary: '#064e3b',
-    accent: '#10b981'
-  },
-  {
-    name: 'Azul Real Tecnológico',
-    primary: '#2563eb',
-    secondary: '#1e1b4b',
-    accent: '#3b82f6'
+    subtitle: 'Tons naturais em esmeralda e verde floresta com fundo suave',
+    swatches: ['#059669', '#064E3B', '#10B981', '#ECFDF5', '#FFFFFF'],
+    colors: {
+      notice_bg_color: '#059669',
+      notice_text_color: '#FFFFFF',
+      topbar_bg_color: '#022C22',
+      secondary_color: '#064E3B',
+      header_text_color: '#ECFDF5',
+      header_input_bg_color: '#065F46',
+      footer_bg_color: '#022C22',
+      footer_text_color: '#A7F3D0',
+      page_bg_color: '#F4FBF7',
+      card_bg_color: '#FFFFFF',
+      card_border_color: '#D1FAE5',
+      text_primary_color: '#064E3B',
+      text_secondary_color: '#047857',
+      primary_color: '#059669',
+      primary_text_color: '#FFFFFF',
+      accent_color: '#D97706',
+      accent_text_color: '#FFFFFF',
+      hero_bg_color: '#022C22',
+      hero_bg_end_color: '#059669',
+      hero_text_color: '#FFFFFF',
+      dark_section_bg_color: '#022C22',
+      dark_card_bg_color: '#064E3B',
+      bottom_nav_bg_color: '#FFFFFF',
+      badge_open_color: '#10B981'
+    }
   },
   {
     name: 'Laranja Solar Vibrante',
-    primary: '#ea580c',
-    secondary: '#431407',
-    accent: '#f97316'
+    subtitle: 'Energia comercial com laranja quente, marrom escuro e creme',
+    swatches: ['#EA580C', '#431407', '#F97316', '#FFF7ED', '#FFFFFF'],
+    colors: {
+      notice_bg_color: '#EA580C',
+      notice_text_color: '#FFFFFF',
+      topbar_bg_color: '#2A0C03',
+      secondary_color: '#431407',
+      header_text_color: '#FFF7ED',
+      header_input_bg_color: '#5C1E0B',
+      footer_bg_color: '#2A0C03',
+      footer_text_color: '#FED7AA',
+      page_bg_color: '#FFFBF7',
+      card_bg_color: '#FFFFFF',
+      card_border_color: '#FED7AA',
+      text_primary_color: '#2A0C03',
+      text_secondary_color: '#9A3412',
+      primary_color: '#EA580C',
+      primary_text_color: '#FFFFFF',
+      accent_color: '#F59E0B',
+      accent_text_color: '#2A0C03',
+      hero_bg_color: '#431407',
+      hero_bg_end_color: '#EA580C',
+      hero_text_color: '#FFFFFF',
+      dark_section_bg_color: '#2A0C03',
+      dark_card_bg_color: '#431407',
+      bottom_nav_bg_color: '#FFFFFF',
+      badge_open_color: '#16A34A'
+    }
   },
   {
-    name: 'Rubi Luxo',
-    primary: '#e11d48',
-    secondary: '#4c0519',
-    accent: '#fb7185'
+    name: 'Rubi Luxo & Black Friday',
+    subtitle: 'Ideal para datas comemorativas, Dia das Mães, Natal ou liquidações',
+    swatches: ['#E11D48', '#4C0519', '#FB7185', '#FFF1F2', '#FFFFFF'],
+    colors: {
+      notice_bg_color: '#E11D48',
+      notice_text_color: '#FFFFFF',
+      topbar_bg_color: '#2B020E',
+      secondary_color: '#4C0519',
+      header_text_color: '#FFF1F2',
+      header_input_bg_color: '#690924',
+      footer_bg_color: '#2B020E',
+      footer_text_color: '#FECDD3',
+      page_bg_color: '#FFF9FA',
+      card_bg_color: '#FFFFFF',
+      card_border_color: '#FFE4E6',
+      text_primary_color: '#1F040C',
+      text_secondary_color: '#881337',
+      primary_color: '#E11D48',
+      primary_text_color: '#FFFFFF',
+      accent_color: '#F59E0B',
+      accent_text_color: '#1F040C',
+      hero_bg_color: '#4C0519',
+      hero_bg_end_color: '#E11D48',
+      hero_text_color: '#FFFFFF',
+      dark_section_bg_color: '#2B020E',
+      dark_card_bg_color: '#4C0519',
+      bottom_nav_bg_color: '#FFFFFF',
+      badge_open_color: '#059669'
+    }
+  }
+];
+
+const COLOR_CONTROL_GROUPS: Array<{
+  title: string;
+  description: string;
+  fields: Array<{
+    key: SiteColorKey;
+    label: string;
+    whereItChanges: string;
+  }>;
+}> = [
+  {
+    title: '1. Barra de Avisos do Topo',
+    description: 'Faixa promocional ou informativa exibida acima do cabeçalho em todo o site.',
+    fields: [
+      {
+        key: 'notice_bg_color',
+        label: 'Fundo da Faixa de Aviso',
+        whereItChanges: 'Onde muda: cor de fundo da barra de aviso lá no topo de todas as páginas.'
+      },
+      {
+        key: 'notice_text_color',
+        label: 'Texto da Faixa de Aviso',
+        whereItChanges: 'Onde muda: cor da frase de boas-vindas ou promoção na faixa superior.'
+      }
+    ]
+  },
+  {
+    title: '2. Cabeçalho, Menu & Rodapé',
+    description: 'Estrutura de navegação superior (logo, barra de busca e abas) e rodapé inferior do site.',
+    fields: [
+      {
+        key: 'topbar_bg_color',
+        label: 'Sub-barra de Localização (Topo)',
+        whereItChanges: 'Onde muda: faixa fina superior com a cidade ("Canaã dos Carajás - PA") e links de atendimento.'
+      },
+      {
+        key: 'secondary_color',
+        label: 'Fundo do Cabeçalho Principal',
+        whereItChanges: 'Onde muda: fundo atrás da logo, da barra de pesquisa e dos botões Início/Lojas/Ofertas.'
+      },
+      {
+        key: 'header_text_color',
+        label: 'Textos & Ícones do Cabeçalho/Rodapé',
+        whereItChanges: 'Onde muda: cor dos links do menu superior, ícones do topo e títulos principais do rodapé.'
+      },
+      {
+        key: 'header_input_bg_color',
+        label: 'Fundo da Barra de Busca & Botões do Topo',
+        whereItChanges: 'Onde muda: fundo do campo de busca no cabeçalho e dos botões de Meus Pedidos / Carrinho.'
+      },
+      {
+        key: 'footer_bg_color',
+        label: 'Fundo do Rodapé',
+        whereItChanges: 'Onde muda: cor de fundo de toda a área inferior (rodapé institucional e links).'
+      },
+      {
+        key: 'footer_text_color',
+        label: 'Textos & Links do Rodapé',
+        whereItChanges: 'Onde muda: cor dos parágrafos, links e informações de contato no rodapé.'
+      }
+    ]
+  },
+  {
+    title: '3. Fundo das Páginas, Cards & Textos',
+    description: 'Aparência geral das telas (Início, Lojas, Ofertas, Serviços, Carrinho e Perfil da Loja).',
+    fields: [
+      {
+        key: 'page_bg_color',
+        label: 'Fundo Geral das Páginas',
+        whereItChanges: 'Onde muda: cor de fundo principal por trás de todas as seções do site.'
+      },
+      {
+        key: 'card_bg_color',
+        label: 'Fundo dos Cards (Lojas, Produtos & Caixas)',
+        whereItChanges: 'Onde muda: fundo dos cartões de lojas, produtos, categorias, carrinho e modais de login.'
+      },
+      {
+        key: 'card_border_color',
+        label: 'Bordas & Linhas Divisórias',
+        whereItChanges: 'Onde muda: bordas de cards, caixas de busca, campos de texto e separadores de listas.'
+      },
+      {
+        key: 'text_primary_color',
+        label: 'Textos Principais & Títulos',
+        whereItChanges: 'Onde muda: títulos das seções, nomes de lojas, nomes de produtos e textos principais.'
+      },
+      {
+        key: 'text_secondary_color',
+        label: 'Textos Secundários & Subtítulos',
+        whereItChanges: 'Onde muda: descrições, categorias, contadores de vendas, avaliações e textos auxiliares.'
+      }
+    ]
+  },
+  {
+    title: '4. Botões, Ofertas, Preços & Destaques',
+    description: 'Cores de ação que chamam atenção para compras, promoções, seleções ativas e links principais.',
+    fields: [
+      {
+        key: 'primary_color',
+        label: 'Cor Principal (Botões & Abas Ativas)',
+        whereItChanges: 'Onde muda: botão "Explorar Lojas", aba selecionada no menu, categorias ativas e detalhes principais.'
+      },
+      {
+        key: 'primary_text_color',
+        label: 'Texto sobre a Cor Principal',
+        whereItChanges: 'Onde muda: cor das letras dentro dos botões e abas que usam a Cor Principal.'
+      },
+      {
+        key: 'accent_color',
+        label: 'Cor de Acento (Ofertas, Preços & Entrar)',
+        whereItChanges: 'Onde muda: botão "Entrar", contador do carrinho, selos "Oficial"/desconto, preços em destaque e botões de compra.'
+      },
+      {
+        key: 'accent_text_color',
+        label: 'Texto sobre a Cor de Acento',
+        whereItChanges: 'Onde muda: cor das letras dentro de selos de desconto, badge do carrinho e botões de acento.'
+      }
+    ]
+  },
+  {
+    title: '5. Banner Principal (Hero) & Seções Escuras',
+    description: 'Gradiente da vitrine principal na página inicial, capa das lojas e blocos escuros de serviços/resumo.',
+    fields: [
+      {
+        key: 'hero_bg_color',
+        label: 'Banner Principal — Cor Inicial do Gradiente',
+        whereItChanges: 'Onde muda: cor de partida do banner grande da página inicial e fundo de capa das lojas.'
+      },
+      {
+        key: 'hero_bg_end_color',
+        label: 'Banner Principal — Cor Final do Gradiente',
+        whereItChanges: 'Onde muda: segunda cor do degradê do banner principal na tela inicial.'
+      },
+      {
+        key: 'hero_text_color',
+        label: 'Textos do Banner Principal',
+        whereItChanges: 'Onde muda: título grande e subtítulo dentro do banner da tela inicial e nome na capa da loja.'
+      },
+      {
+        key: 'dark_section_bg_color',
+        label: 'Fundo das Seções Escuras & Resumo do Carrinho',
+        whereItChanges: 'Onde muda: fundo dos blocos de Serviços Locais/Patrocinadores na Home, resumo do Carrinho e sacola flutuante.'
+      },
+      {
+        key: 'dark_card_bg_color',
+        label: 'Fundo dos Cards dentro das Seções Escuras',
+        whereItChanges: 'Onde muda: cartões de prestadores de serviços e patrocinadores sobre o fundo escuro.'
+      }
+    ]
+  },
+  {
+    title: '6. Barra Mobile & Selos de Status',
+    description: 'Navegação inferior no celular e indicadores de loja aberta/disponível.',
+    fields: [
+      {
+        key: 'bottom_nav_bg_color',
+        label: 'Fundo da Barra Inferior no Celular',
+        whereItChanges: 'Onde muda: barra fixa no rodapé da tela em smartphones (Início, Lojas, Serviços, Carrinho, Conta).'
+      },
+      {
+        key: 'badge_open_color',
+        label: 'Selo "Loja Ativa" / Status Positivo',
+        whereItChanges: 'Onde muda: etiqueta verde de "Loja Ativa" nos cards de lojas e indicadores de status positivo.'
+      }
+    ]
   }
 ];
 
@@ -1066,41 +1383,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           </div>
 
           {/* Site Colors & Palette Panel */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5">
-            <div className="flex items-center gap-2">
-              <Palette className="w-5 h-5 text-amber-500" />
-              <div>
-                <h3 className="text-base font-black text-slate-900 tracking-tight">Identidade Visual & Cores do Site Principal</h3>
-                <p className="text-xs text-slate-500">
-                  Aqui o Super Admin define as cores e textos oficiais aplicados em todo o marketplace (cabeçalho, rodapé, botões principais e destaques).
-                </p>
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-2.5">
+                <Palette className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-base font-black text-slate-900 tracking-tight">
+                    Identidade Visual & Todas as Cores do Site ({Object.keys(DEFAULT_SITE_COLORS).length} Pontos Editáveis)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Personalize exatamente cada área do marketplace em tempo real. Cada campo abaixo explica exatamente o que será alterado antes de você salvar.
+                  </p>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const defaults = { ...DEFAULT_SITE_COLORS };
+                  setSettings(prev => ({ ...prev, ...defaults }));
+                  updateSettingsState(defaults);
+                }}
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Restaurar Cores Padrão
+              </button>
             </div>
 
-            {/* Curated Theme Presets */}
+            {/* Curated Full-Site Theme Presets */}
             <div>
-              <label className="block font-bold text-slate-700 mb-2">Paletas de Cores Oficiais Recomendadas</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="block font-bold text-slate-700 mb-1">Paletas Prontas Completas (Aplicam todas as 24 cores de uma vez)</label>
+              <p className="text-[11px] text-slate-500 mb-2.5">
+                Escolha uma paleta pronta como ponto de partida e depois ajuste individualmente qualquer cor abaixo se quiser.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {THEME_PRESETS.map(t => (
                   <button
                     key={t.name}
                     type="button"
                     onClick={() => {
-                      const newColors = {
-                        primary_color: t.primary,
-                        secondary_color: t.secondary,
-                        accent_color: t.accent
-                      };
                       setSettings(prev => ({
                         ...prev,
-                        ...newColors
+                        ...t.colors
                       }));
-                      updateSettingsState(newColors);
+                      updateSettingsState(t.colors);
                     }}
                     className="p-3 rounded-2xl border border-slate-200 hover:border-slate-400 text-left flex items-center gap-3 transition cursor-pointer bg-slate-50 hover:bg-white"
                   >
                     <div className="flex -space-x-1.5 shrink-0">
-                      {(t.swatches || [t.primary, t.secondary, t.accent]).map((hex, idx) => (
+                      {t.swatches.map((hex, idx) => (
                         <span
                           key={`${t.name}-${idx}`}
                           style={{ backgroundColor: hex }}
@@ -1108,121 +1440,268 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                         />
                       ))}
                     </div>
-                    <span className="text-xs font-bold text-slate-900 truncate">{t.name}</span>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-slate-900 block truncate">{t.name}</span>
+                      <span className="text-[10px] text-slate-500 block truncate">{t.subtitle}</span>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Custom Color Pickers */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Cor Primária (Destaques/Botões)</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={settings['primary_color'] || '#fdca04'}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setSettings(prev => ({ ...prev, primary_color: val }));
-                      updateSettingsState({ primary_color: val });
-                    }}
-                    className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5"
-                  />
-                  <input
-                    type="text"
-                    value={settings['primary_color'] || '#fdca04'}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setSettings(prev => ({ ...prev, primary_color: val }));
-                      updateSettingsState({ primary_color: val });
-                    }}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase"
-                  />
-                </div>
-              </div>
+            {/* 6 Grouped Granular Color Pickers */}
+            <div className="space-y-5 pt-1">
+              {COLOR_CONTROL_GROUPS.map(group => (
+                <div key={group.title} className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-4">
+                  <div className="border-b border-slate-200/80 pb-2.5">
+                    <h4 className="text-xs sm:text-sm font-black text-slate-900">{group.title}</h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">{group.description}</p>
+                  </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Cor Secundária (Cabeçalho/Fundo Escuro)</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={settings['secondary_color'] || '#0f172a'}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setSettings(prev => ({ ...prev, secondary_color: val }));
-                      updateSettingsState({ secondary_color: val });
-                    }}
-                    className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5"
-                  />
-                  <input
-                    type="text"
-                    value={settings['secondary_color'] || '#0f172a'}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setSettings(prev => ({ ...prev, secondary_color: val }));
-                      updateSettingsState({ secondary_color: val });
-                    }}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase"
-                  />
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {group.fields.map(field => {
+                      const currentVal = settings[field.key] || DEFAULT_SITE_COLORS[field.key];
+                      const safePickerHex = /^#[0-9a-fA-F]{6}$/.test(currentVal)
+                        ? currentVal
+                        : DEFAULT_SITE_COLORS[field.key];
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Cor de Acento (Hover/Realce)</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={settings['accent_color'] || '#f59e0b'}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setSettings(prev => ({ ...prev, accent_color: val }));
-                      updateSettingsState({ accent_color: val });
-                    }}
-                    className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5"
-                  />
-                  <input
-                    type="text"
-                    value={settings['accent_color'] || '#f59e0b'}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setSettings(prev => ({ ...prev, accent_color: val }));
-                      updateSettingsState({ accent_color: val });
-                    }}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase"
-                  />
+                      const handleColorChange = (val: string) => {
+                        setSettings(prev => ({ ...prev, [field.key]: val }));
+                        updateSettingsState({ [field.key]: val });
+                      };
+
+                      return (
+                        <div
+                          key={field.key}
+                          className="p-3 rounded-xl bg-white border border-slate-200/90 flex flex-col justify-between gap-2.5"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="font-bold text-xs text-slate-900">{field.label}</label>
+                              <span className="text-[10px] font-mono text-slate-400">
+                                Padrão: {DEFAULT_SITE_COLORS[field.key]}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 leading-snug mt-1">
+                              {field.whereItChanges}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-0.5">
+                            <input
+                              type="color"
+                              value={safePickerHex}
+                              onChange={e => handleColorChange(e.target.value.toUpperCase())}
+                              aria-label={field.label}
+                              className="w-10 h-9 rounded-lg border border-slate-200 cursor-pointer p-0.5 shrink-0 bg-white"
+                            />
+                            <input
+                              type="text"
+                              value={currentVal}
+                              onChange={e => handleColorChange(e.target.value)}
+                              placeholder={DEFAULT_SITE_COLORS[field.key]}
+                              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-mono text-xs uppercase focus:bg-white focus:outline-none focus:border-slate-400"
+                            />
+                            {currentVal.toUpperCase() !== DEFAULT_SITE_COLORS[field.key].toUpperCase() && (
+                              <button
+                                type="button"
+                                onClick={() => handleColorChange(DEFAULT_SITE_COLORS[field.key])}
+                                title={`Voltar para ${DEFAULT_SITE_COLORS[field.key]}`}
+                                className="px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 shrink-0 cursor-pointer"
+                              >
+                                Padrão
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
 
-            {/* Live Theme Preview */}
+            {/* Complete Live Theme Preview */}
             <div className="pt-2">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-2">
-                Pré-visualização da Paleta no Site:
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-2">
+                Pré-visualização em Tempo Real (Topo, Banner, Card, Botões e Rodapé):
               </span>
               <div
-                style={{ backgroundColor: settings['secondary_color'] || '#0f172a' }}
-                className="p-4 rounded-2xl text-white shadow-md space-y-3 transition-colors border border-white/10"
+                style={{
+                  borderColor: settings['card_border_color'] || DEFAULT_SITE_COLORS.card_border_color,
+                  backgroundColor: settings['page_bg_color'] || DEFAULT_SITE_COLORS.page_bg_color
+                }}
+                className="rounded-2xl overflow-hidden border shadow-md"
               >
-                <div className="flex items-center justify-between">
+                {/* Notice Bar */}
+                <div
+                  style={{
+                    backgroundColor: settings['notice_bg_color'] || DEFAULT_SITE_COLORS.notice_bg_color,
+                    color: settings['notice_text_color'] || DEFAULT_SITE_COLORS.notice_text_color
+                  }}
+                  className="px-4 py-1.5 text-[11px] font-bold text-center truncate"
+                >
+                  {settings['banner_notice'] || 'Aviso no topo do site para os moradores de Canaã dos Carajás.'}
+                </div>
+
+                {/* Topbar */}
+                <div
+                  style={{
+                    backgroundColor: settings['topbar_bg_color'] || DEFAULT_SITE_COLORS.topbar_bg_color,
+                    color: settings['header_text_color'] || DEFAULT_SITE_COLORS.header_text_color
+                  }}
+                  className="px-4 py-1 text-[10px] flex items-center justify-between opacity-90"
+                >
+                  <span>{settings['city_name'] || 'Canaã dos Carajás'}, {settings['city_state'] || 'PA'}</span>
+                  <span>Central de Atendimento</span>
+                </div>
+
+                {/* Main Header */}
+                <div
+                  style={{
+                    backgroundColor: settings['secondary_color'] || DEFAULT_SITE_COLORS.secondary_color,
+                    color: settings['header_text_color'] || DEFAULT_SITE_COLORS.header_text_color
+                  }}
+                  className="px-4 py-3 flex flex-wrap items-center justify-between gap-2"
+                >
                   <div className="flex items-center gap-2">
                     <img
                       src={settings['site_logo_url'] || '/shop-da-cidade-logo-transparente.png'}
                       alt={settings['platform_name'] || 'Shop da Cidade'}
-                      className="h-7 w-auto max-w-[140px] object-contain"
+                      className="h-7 w-auto max-w-[120px] object-contain"
                     />
                     <span className="text-xs font-black">{settings['platform_name'] || 'Shop da Cidade'}</span>
                   </div>
-                  <span
-                    style={{ backgroundColor: settings['primary_color'] || '#fdca04', color: '#0f172a' }}
-                    className="px-3 py-1 rounded-lg text-xs font-black shadow-xs"
+                  <div
+                    style={{
+                      backgroundColor: settings['header_input_bg_color'] || DEFAULT_SITE_COLORS.header_input_bg_color,
+                      color: settings['header_text_color'] || DEFAULT_SITE_COLORS.header_text_color
+                    }}
+                    className="px-3 py-1 rounded-lg text-[10px] opacity-85 border border-white/10"
                   >
-                    Botão Principal
-                  </span>
+                    Buscar produtos, lojas...
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      style={{
+                        backgroundColor: settings['primary_color'] || DEFAULT_SITE_COLORS.primary_color,
+                        color: settings['primary_text_color'] || DEFAULT_SITE_COLORS.primary_text_color
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-black"
+                    >
+                      Início
+                    </span>
+                    <span
+                      style={{
+                        backgroundColor: settings['accent_color'] || DEFAULT_SITE_COLORS.accent_color,
+                        color: settings['accent_text_color'] || DEFAULT_SITE_COLORS.accent_text_color
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-black"
+                    >
+                      Entrar
+                    </span>
+                  </div>
                 </div>
-                <p className="text-[11px] text-slate-300">
-                  {settings['banner_notice'] || 'Aviso no topo do site para os moradores de Canaã.'}
-                </p>
+
+                {/* Mini Hero + Sample Card */}
+                <div className="p-4 space-y-3">
+                  <div
+                    style={{
+                      background: `linear-gradient(135deg, ${settings['hero_bg_color'] || DEFAULT_SITE_COLORS.hero_bg_color}, ${settings['hero_bg_end_color'] || DEFAULT_SITE_COLORS.hero_bg_end_color})`,
+                      color: settings['hero_text_color'] || DEFAULT_SITE_COLORS.hero_text_color
+                    }}
+                    className="p-3.5 rounded-xl flex items-center justify-between gap-3"
+                  >
+                    <div>
+                      <span className="text-xs font-black block">Banner Principal do Marketplace</span>
+                      <span className="text-[10px] opacity-80">Gradiente e textos da vitrine inicial</span>
+                    </div>
+                    <span
+                      style={{
+                        backgroundColor: settings['primary_color'] || DEFAULT_SITE_COLORS.primary_color,
+                        color: settings['primary_text_color'] || DEFAULT_SITE_COLORS.primary_text_color
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-[10px] font-black shrink-0"
+                    >
+                      Explorar Lojas
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      backgroundColor: settings['card_bg_color'] || DEFAULT_SITE_COLORS.card_bg_color,
+                      borderColor: settings['card_border_color'] || DEFAULT_SITE_COLORS.card_border_color
+                    }}
+                    className="p-3.5 rounded-xl border flex flex-wrap items-center justify-between gap-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          style={{ backgroundColor: settings['badge_open_color'] || DEFAULT_SITE_COLORS.badge_open_color }}
+                          className="px-2 py-0.5 rounded text-[9px] font-black text-white uppercase"
+                        >
+                          Loja Ativa
+                        </span>
+                        <span
+                          style={{
+                            backgroundColor: settings['accent_color'] || DEFAULT_SITE_COLORS.accent_color,
+                            color: settings['accent_text_color'] || DEFAULT_SITE_COLORS.accent_text_color
+                          }}
+                          className="px-2 py-0.5 rounded text-[9px] font-black uppercase"
+                        >
+                          Oficial • -20%
+                        </span>
+                      </div>
+                      <p
+                        style={{ color: settings['text_primary_color'] || DEFAULT_SITE_COLORS.text_primary_color }}
+                        className="text-xs font-black"
+                      >
+                        Título de Loja ou Produto de Exemplo
+                      </p>
+                      <p
+                        style={{ color: settings['text_secondary_color'] || DEFAULT_SITE_COLORS.text_secondary_color }}
+                        className="text-[10px]"
+                      >
+                        Texto secundário com descrição, avaliação e bairro.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span
+                        style={{ color: settings['accent_color'] || DEFAULT_SITE_COLORS.accent_color }}
+                        className="text-sm font-black"
+                      >
+                        R$ 89,90
+                      </span>
+                      <span
+                        style={{
+                          backgroundColor: settings['primary_color'] || DEFAULT_SITE_COLORS.primary_color,
+                          color: settings['primary_text_color'] || DEFAULT_SITE_COLORS.primary_text_color
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-[10px] font-black"
+                      >
+                        Comprar
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mini Footer */}
+                <div
+                  style={{
+                    backgroundColor: settings['footer_bg_color'] || DEFAULT_SITE_COLORS.footer_bg_color,
+                    color: settings['footer_text_color'] || DEFAULT_SITE_COLORS.footer_text_color
+                  }}
+                  className="px-4 py-2.5 flex items-center justify-between text-[10px]"
+                >
+                  <span
+                    style={{ color: settings['header_text_color'] || DEFAULT_SITE_COLORS.header_text_color }}
+                    className="font-bold"
+                  >
+                    {settings['platform_name'] || 'Shop da Cidade'}
+                  </span>
+                  <span>Rodapé oficial da plataforma</span>
+                </div>
               </div>
             </div>
           </div>

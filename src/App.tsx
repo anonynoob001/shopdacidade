@@ -163,7 +163,7 @@ function ShopCidadeApp() {
   const isStoreDetailPage = currentView === 'store-detail';
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
+    <div className="min-h-screen flex flex-col bg-[var(--theme-page-bg)] text-[var(--theme-text-primary)] font-sans transition-colors">
       {!isStoreDetailPage && (
         <Header
           currentView={currentView}
